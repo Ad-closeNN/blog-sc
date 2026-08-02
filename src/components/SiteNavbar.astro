@@ -10,9 +10,12 @@ type Props = {
   headings?: Heading[]
   /** 面包屑末段显示文本（tag/category 原文名） */
   currentLabel?: string
+  /** 文章页：h1 滚出 navbar 后，面包屑末段从 slug 顶替为该标题 */
+  navbarSwapTitle?: string
 }
 
-const { pathname, headings = [], currentLabel } = Astro.props
+const { pathname, headings = [], currentLabel, navbarSwapTitle } =
+  Astro.props
 const isHome = pathname === "/"
 const isPosts = pathname === "/posts/" || pathname.startsWith("/posts/")
 const segments = pathname.split("/").filter(Boolean)
@@ -81,7 +84,21 @@ if (!isHome) {
               )}
               {item.current ? (
                 <span class="site-navbar-current" aria-current="page">
-                  {item.label}
+                  {navbarSwapTitle ? (
+                    <>
+                      <span class="site-navbar-current-slug">
+                        {item.label}
+                      </span>
+                      <span
+                        class="site-navbar-current-title"
+                        aria-hidden="true"
+                      >
+                        {navbarSwapTitle}
+                      </span>
+                    </>
+                  ) : (
+                    item.label
+                  )}
                 </span>
               ) : (
                 <a href={item.href} class="site-navbar-link">

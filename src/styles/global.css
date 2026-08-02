@@ -376,6 +376,11 @@ html.is-route-loaded .route-progress {
   html.is-navbar-home-exit .site-navbar.is-breadcrumb .site-navbar-breadcrumb {
     animation: none;
   }
+
+  .site-navbar-current-slug,
+  .site-navbar-current-title {
+    transition: none;
+  }
 }
 
 .site-navbar {
@@ -523,6 +528,9 @@ html.is-route-loaded .route-progress {
   white-space: nowrap;
 }
 
+/* 文章页末段双层互换：放开 max-width 让正常标题完整显示，
+   超长才进入横向滚动；非文章页保持 18rem 截断（单层无子层，ellipsis 生效）。 */
+
 .site-navbar-link {
   color: var(--muted-foreground);
 }
@@ -535,6 +543,62 @@ html.is-route-loaded .route-progress {
 .site-navbar-current {
   color: var(--foreground);
   font-weight: 500;
+}
+
+/*
+ * slug ↔ 标题互换：两层都不截断，超长时各自横向滚动（隐藏滚动条）。
+ * 用 inline-grid 同格叠加（grid-area 1/1）让 current 宽度 = max(slug, title)：
+ * 切换时 current 宽度始终是较宽者，不抖动；正常标题（≤ 28rem）完整显示不滚动，
+ * 超长才进入 overflow-x:auto 横向滚动。is-title-gone 由 IntersectionObserver
+ * 观察 .article-header h1 滚出 navbar 下沿时切换（见 BaseLayout.astro 的
+ * __siteNavbarTitleSwapInstalled 脚本）。
+ */
+.site-navbar-current {
+  position: relative;
+}
+.site-navbar-current-slug,
+.site-navbar-current-title {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  overflow-x: auto;
+  white-space: nowrap;
+  scrollbar-width: none; /* 隐藏滚动条，视觉干净 */
+  transition:
+    opacity 220ms ease,
+    transform 220ms ease;
+}
+.site-navbar-current-slug::-webkit-scrollbar,
+.site-navbar-current-title::-webkit-scrollbar {
+  display: none;
+}
+/* 文章页双层：grid 同格叠加，current 宽度取两层较宽者，上限 28rem。
+   minmax(0, max-content) 让 track 在容器 max-width 收缩时跟着收窄，
+   子项 min-width:0 + overflow-x:auto 才能在 track 内横向滚动而非溢出。 */
+.site-navbar:has(.site-navbar-current-title) .site-navbar-current {
+  display: inline-grid;
+  grid-template-columns: minmax(0, max-content);
+  align-items: center;
+  max-width: 28rem;
+}
+.site-navbar:has(.site-navbar-current-title) .site-navbar-current-slug,
+.site-navbar:has(.site-navbar-current-title) .site-navbar-current-title {
+  grid-area: 1 / 1; /* 同格叠加 */
+  min-width: 0;
+}
+.site-navbar-current-title {
+  opacity: 0;
+  transform: translateX(10px); /* 从右待入 */
+  pointer-events: none; /* 隐藏时不拦截事件 */
+}
+.site-navbar.is-title-gone .site-navbar-current-slug {
+  opacity: 0;
+  transform: translateX(-26px); /* 向左滑出 */
+}
+.site-navbar.is-title-gone .site-navbar-current-title {
+  opacity: 1;
+  transform: translateX(0); /* 从右滑入归位 */
+  pointer-events: auto; /* 显示时可横向滚动查看超长标题 */
 }
 
 .site-navbar-navlink {

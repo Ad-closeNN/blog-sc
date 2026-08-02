@@ -20,6 +20,8 @@ type Props = {
   headings?: Heading[]
   /** 面包屑末段显示文本（slug → 原文，如 tag/category 名） */
   breadcrumbLabel?: string
+  /** 文章页：h1 滚出 navbar 后，面包屑末段从 slug 顶替为该标题 */
+  navbarSwapTitle?: string
   /** 图片路径（/images/...），用于 og:image / twitter:image */
   ogImage?: string
   /** 搜索引擎索引策略：true 时不索引该页 */
@@ -175,6 +177,52 @@ const ogImageAbs = Astro.props.ogImage
         setup()
       })()
     </script>
+    <script is:inline>
+      ;(() => {
+        // 文章页 slug ↔ 标题互换：h1 底边滚出 navbar 下沿时，
+        // 面包屑末段 slug 向左滑出、文章标题从右滑入；滚回则反向。
+        // 复用 is-scrolled 的 installKey + astro:page-load re-setup 模式。
+        const installKey = "__siteNavbarTitleSwapInstalled"
+        if (window[installKey]) return
+        window[installKey] = true
+
+        const navSelector = ".site-navbar"
+        const h1Selector = ".article-header h1"
+        let observer = null
+
+        const setup = () => {
+          const nav = document.querySelector(navSelector)
+          const h1 = document.querySelector(h1Selector)
+          // 只在文章页激活：navbar 有双层互换结构 + 页面有 h1
+          if (
+            !nav ||
+            !h1 ||
+            !nav.querySelector(".site-navbar-current-title")
+          )
+            return
+
+          if (observer) observer.disconnect()
+          observer = new IntersectionObserver(
+            (entries) => {
+              for (const entry of entries) {
+                const gone = !entry.isIntersecting
+                nav.classList.toggle("is-title-gone", gone)
+                const slug = nav.querySelector(".site-navbar-current-slug")
+                const title = nav.querySelector(".site-navbar-current-title")
+                if (slug) slug.setAttribute("aria-hidden", String(gone))
+                if (title)
+                  title.setAttribute("aria-hidden", String(!gone))
+              }
+            },
+            { rootMargin: "-48px 0px 0px 0px", threshold: 0 },
+          )
+          observer.observe(h1)
+        }
+
+        document.addEventListener("astro:page-load", setup)
+        setup()
+      })()
+    </script>
   </head>
   <body>
     <div class="route-progress" aria-hidden="true">
@@ -188,6 +236,7 @@ const ogImageAbs = Astro.props.ogImage
       pathname={pathname}
       headings={Astro.props.headings}
       currentLabel={Astro.props.breadcrumbLabel}
+      navbarSwapTitle={Astro.props.navbarSwapTitle}
     />
     <main class={Astro.props.mainClass}>
       <slot />
