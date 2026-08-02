@@ -123,7 +123,7 @@ export function initTimelineFilter({
       item.hidden = !matches(item, value)
     })
 
-    // 高亮博文卡片里与当前筛选 Tag 对应的 Badge 边框
+    // 高亮文章卡片里与当前筛选 Tag 对应的 Badge 边框
     // 仅标签筛选时高亮匹配项；其他任何情况（分类筛选/全部）都清空高亮
     const isTagFilter = paramKey === "tag" && !isAll
     document

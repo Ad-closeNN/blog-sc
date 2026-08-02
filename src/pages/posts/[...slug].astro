@@ -81,7 +81,7 @@ const jsonLd = [
       {
         "@type": "ListItem",
         position: 2,
-        name: "博文",
+        name: "文章",
         item: `${site.url}/posts/`,
       },
       {
@@ -106,12 +106,13 @@ const jsonLd = [
   ogImage={ogImage}
   jsonLd={jsonLd}
   mainClass="is-post-page"
+  navbarSwapTitle={post.data.title}
 >
   <div class="post-detail-container">
     <div class="post-detail-grid">
       <!-- Left Column: Main Article Content & Top Back Bar -->
       <article class="post-article-main min-w-0">
-        <!-- 返回博文目录长条按钮：跟随正文块宽度，不进右侧 TOC 栏 -->
+        <!-- 返回文章目录长条按钮：跟随正文块宽度，不进右侧 TOC 栏 -->
         <BackToPostsBar />
 
         <header class="article-header mb-7">

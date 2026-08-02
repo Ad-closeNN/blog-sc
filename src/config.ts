@@ -11,7 +11,7 @@ export const site = {
 
 export const navigation = {
   home: { label: "首页", href: "/" },
-  posts: { label: "博文", href: "/posts/" },
+  posts: { label: "文章", href: "/posts/" },
 } as const
 
 export const navigationItems = Object.values(navigation)
