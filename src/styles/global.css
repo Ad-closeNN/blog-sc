@@ -150,6 +150,11 @@
   * {
     @apply border-border outline-ring/50;
   }
+  /* shadcn/ui Neutral 默认文本选中：亮色深灰底+浅字，暗色浅灰底+深字（对标 ProjectK-Web） */
+  ::selection {
+    background: var(--primary);
+    color: var(--primary-foreground);
+  }
   body {
     @apply bg-background text-foreground;
     min-width: 320px;
