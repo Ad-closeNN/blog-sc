@@ -4,3 +4,7 @@ allowBuilds:
   esbuild: true
   sharp: true
   msw: false
+
+minimumReleaseAgeExclude:
+  - '@astrojs/internal-helpers@0.10.2'
+  - '@astrojs/react@6.0.2'
