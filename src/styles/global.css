@@ -466,6 +466,14 @@ html.is-route-loaded .route-progress {
   letter-spacing: -0.015em;
   text-decoration: none;
   white-space: nowrap;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease,
+    transform 150ms ease;
+}
+
+.site-navbar-brand:active {
+  transform: translateY(1px);
 }
 
 .site-navbar-brand:hover {
@@ -533,11 +541,19 @@ html.is-route-loaded .route-progress {
 
 .site-navbar-link {
   color: var(--muted-foreground);
+  transition:
+    background-color 160ms ease,
+    color 160ms ease,
+    transform 150ms ease;
 }
 
 .site-navbar-link:hover {
   background: var(--muted);
   color: var(--foreground);
+}
+
+.site-navbar-link:active {
+  transform: translateY(1px);
 }
 
 .site-navbar-current {
@@ -609,6 +625,14 @@ html.is-route-loaded .route-progress {
   font-size: 0.8125rem;
   font-weight: 600;
   text-decoration: none;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease,
+    transform 150ms ease;
+}
+
+.site-navbar-navlink:active {
+  transform: translateY(1px);
 }
 
 .site-navbar-navlink:hover,

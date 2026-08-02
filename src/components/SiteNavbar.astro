@@ -17,7 +17,6 @@ type Props = {
 const { pathname, headings = [], currentLabel, navbarSwapTitle } =
   Astro.props
 const isHome = pathname === "/"
-const isPosts = pathname === "/posts/" || pathname.startsWith("/posts/")
 const segments = pathname.split("/").filter(Boolean)
 
 const SEGMENT_LABELS: Record<string, string> = {
@@ -114,16 +113,6 @@ if (!isHome) {
 
   <!-- 桌面端显示 (md:flex) -->
   <div class="hidden items-center gap-2 md:flex">
-    <a
-      href={navigation.posts.href}
-      class:list={[
-        "site-navbar-navlink",
-        isPosts && !isHome ? "is-active" : null,
-      ]}
-    >
-      {navigation.posts.label}
-    </a>
-
     <ThemeToggle client:load transition:persist />
   </div>
 
