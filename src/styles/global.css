@@ -155,6 +155,35 @@
     background: var(--primary);
     color: var(--primary-foreground);
   }
+  /* 全局浏览器滚动条：shadcn neutral 风格，细条圆角 thumb、无轨道。
+     基色用 --muted-foreground（随主题反色的 neutral 灰，暗色也够亮），
+     hover 向 --foreground 靠拢（亮色加深、暗色提亮，两方向都更突出）。 */
+  * {
+    scrollbar-width: thin; /* Firefox */
+    scrollbar-color: var(--muted-foreground) transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  *::-webkit-scrollbar-thumb {
+    border-radius: 9999px;
+    background: var(--muted-foreground);
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    /* 未聚焦态亮度 +30%，hover 回落到原色并向 foreground 靠拢，整体平滑过渡 */
+    filter: brightness(1.3);
+    transition:
+      filter 160ms ease,
+      background 160ms ease;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    filter: brightness(1);
+    background: color-mix(in oklch, var(--muted-foreground) 55%, var(--foreground));
+  }
   body {
     @apply bg-background text-foreground;
     min-width: 320px;
@@ -242,17 +271,17 @@ body {
   left: 0;
   right: 0;
   z-index: 120;
-  height: 2px;
+  height: 4px;
   pointer-events: none;
   opacity: 0;
-  transform: translateY(-1px);
+  transform: translateY(-2px);
 }
 
 .route-progress-track {
   position: relative;
   height: 100%;
   overflow: hidden;
-  background: color-mix(in oklch, var(--border) 70%, transparent);
+  background: color-mix(in oklch, var(--muted-foreground) 12%, transparent);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }
@@ -263,15 +292,15 @@ body {
   width: 100%;
   transform: scaleX(var(--route-progress));
   transform-origin: left center;
-  background: var(--route-progress-bar);
+  background: var(--muted-foreground);
 }
 
 .route-progress-bar::after {
   content: "";
   position: absolute;
   top: 0;
-  right: -18px;
-  width: 36px;
+  right: -28px;
+  width: 56px;
   height: 100%;
   background: linear-gradient(
     90deg,
