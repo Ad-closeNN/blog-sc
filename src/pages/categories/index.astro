@@ -1,0 +1,51 @@
+---
+import BackToPostsBar from "@/components/BackToPostsBar.astro"
+import PostTimeline from "@/components/PostTimeline.astro"
+import TimelineFilter from "@/components/TimelineFilter.astro"
+import { site } from "@/config"
+import BaseLayout from "@/layouts/BaseLayout.astro"
+import { getPosts, getTaxonomies } from "@/lib/posts"
+
+const posts = await getPosts()
+const { categories } = getTaxonomies(posts)
+const description = `全站 ${posts.length} 篇文章 · 按分类筛选`
+
+// 分类筛选页 noindex：查询参数变体多，不进索引
+const jsonLd = {
+  "@type": "CollectionPage",
+  name: "分类",
+  description,
+  url: `${site.url}/categories/`,
+  isPartOf: {
+    "@type": "Blog",
+    name: site.name,
+    url: site.url,
+  },
+}
+---
+
+<BaseLayout
+  title="分类"
+  description={description}
+  ogType="website"
+  ogImage={site.avatarSrc}
+  noindex
+  jsonLd={jsonLd}
+  mainClass="is-posts-page"
+>
+  <section class="posts-hero mb-8 max-w-[760px]">
+    <h1 class="m-0 font-heading text-3xl font-semibold tracking-tight">
+      分类
+      <span class="ml-2 text-base font-normal text-muted-foreground">
+        Categories
+      </span>
+    </h1>
+    <p class="mt-3 text-muted-foreground">{description}</p>
+  </section>
+
+  <BackToPostsBar />
+
+  <TimelineFilter taxonomies={categories} type="category" />
+
+  <PostTimeline posts={posts} />
+</BaseLayout>

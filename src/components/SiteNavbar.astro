@@ -1,0 +1,119 @@
+---
+import ThemeToggle from "@/components/ThemeToggle"
+import MobileNavMenu from "@/components/MobileNavMenu"
+import { navigation, site } from "@/config"
+import { ChevronRightIcon } from "lucide-react"
+import type { Heading } from "@/components/TableOfContents"
+
+type Props = {
+  pathname: string
+  headings?: Heading[]
+  /** 面包屑末段显示文本（tag/category 原文名） */
+  currentLabel?: string
+}
+
+const { pathname, headings = [], currentLabel } = Astro.props
+const isHome = pathname === "/"
+const isPosts = pathname === "/posts/" || pathname.startsWith("/posts/")
+const segments = pathname.split("/").filter(Boolean)
+
+const SEGMENT_LABELS: Record<string, string> = {
+  posts: navigation.posts.label,
+  tags: "标签",
+  categories: "分类",
+}
+
+const crumbs: { href: string; label: string; current: boolean }[] = []
+if (!isHome) {
+  let href = "/"
+  for (let i = 0; i < segments.length; i++) {
+    href += `${segments[i]}/`
+    const isLast = i === segments.length - 1
+    const label = SEGMENT_LABELS[segments[i]] ?? decodeURIComponent(segments[i])
+    crumbs.push({
+      href,
+      label: isLast && currentLabel ? currentLabel : label,
+      current: isLast,
+    })
+  }
+}
+---
+
+<nav
+  class:list={["site-navbar", isHome ? "is-home" : "is-breadcrumb"]}
+  aria-label="站点"
+>
+  <a
+    href={navigation.home.href}
+    class="site-navbar-avatar-wrap"
+    aria-label={navigation.home.label}
+  >
+    <img
+      class="site-navbar-avatar"
+      src={site.avatarSrc}
+      alt=""
+      width="32"
+      height="32"
+    />
+  </a>
+
+  <div class="site-navbar-content">
+    <a
+      href={navigation.home.href}
+      class="site-navbar-brand"
+      aria-current={isHome ? "page" : undefined}
+      aria-hidden={isHome ? undefined : "true"}
+      tabindex={isHome ? undefined : -1}
+    >
+      {site.shortName}
+    </a>
+
+    {
+      !isHome && (
+        <ol class="site-navbar-breadcrumb" aria-label="面包屑">
+          {crumbs.map((item, index) => (
+            <li class="site-navbar-crumb">
+              {index > 0 && (
+                <ChevronRightIcon
+                  className="site-navbar-sep size-3.5 text-muted-foreground"
+                  aria-hidden="true"
+                />
+              )}
+              {item.current ? (
+                <span class="site-navbar-current" aria-current="page">
+                  {item.label}
+                </span>
+              ) : (
+                <a href={item.href} class="site-navbar-link">
+                  {item.label}
+                </a>
+              )}
+            </li>
+          ))}
+        </ol>
+      )
+    }
+  </div>
+
+  <!-- 桌面端显示 (md:flex) -->
+  <div class="hidden items-center gap-2 md:flex">
+    <a
+      href={navigation.posts.href}
+      class:list={[
+        "site-navbar-navlink",
+        isPosts && !isHome ? "is-active" : null,
+      ]}
+    >
+      {navigation.posts.label}
+    </a>
+
+    <ThemeToggle client:load transition:persist />
+  </div>
+
+  <MobileNavMenu
+    client:load
+    transition:persist
+    pathname={pathname}
+    headings={headings}
+  />
+</nav>

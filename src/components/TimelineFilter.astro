@@ -1,0 +1,96 @@
+---
+import type { Taxonomy } from "@/lib/posts"
+
+type Props = {
+  taxonomies: Taxonomy[]
+  /** tags: 匹配文章 data-tags；category: 匹配文章 data-category */
+  type: "tags" | "category"
+}
+
+const { taxonomies, type } = Astro.props
+const paramKey = type === "tags" ? "tag" : "cat"
+const ariaLabel = type === "tags" ? "按标签筛选" : "按分类筛选"
+---
+
+<div
+  class="timeline-filter mb-6 flex flex-wrap items-center gap-1.5"
+  data-timeline-filter
+  data-param={paramKey}
+  role="group"
+  aria-label={ariaLabel}
+>
+  <button
+    type="button"
+    class="timeline-filter-chip"
+    data-filter="*"
+    aria-pressed="true"
+  >
+    全部
+  </button>
+  {
+    taxonomies.map((taxonomy) => (
+      <button
+        type="button"
+        class="timeline-filter-chip"
+        data-filter={taxonomy.slug}
+        aria-pressed="false"
+      >
+        {type === "tags" ? `#${taxonomy.name}` : taxonomy.name}
+        <span class="opacity-70 tabular-nums">({taxonomy.count})</span>
+      </button>
+    ))
+  }
+</div>
+
+<style is:global>
+  .timeline-filter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    border: 1px solid var(--border);
+    border-radius: 9999px;
+    padding: 0.25rem 0.625rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--muted-foreground);
+    background: color-mix(in oklch, var(--muted) 60%, transparent);
+    transition:
+      color 150ms ease,
+      background-color 150ms ease,
+      border-color 150ms ease;
+    cursor: pointer;
+  }
+  .timeline-filter-chip:hover {
+    background: var(--muted);
+    color: var(--foreground);
+  }
+  .timeline-filter-chip[aria-pressed="true"] {
+    background: var(--foreground);
+    border-color: var(--foreground);
+    color: var(--background);
+  }
+
+  /* 筛选高亮：博文卡片里与当前筛选 Tag 对应的 Badge 加边框 */
+  .post-timeline-badge.is-filter-active {
+    border-color: var(--foreground);
+    color: var(--foreground);
+    background: color-mix(in oklch, var(--foreground) 10%, transparent);
+  }
+</style>
+
+<script>
+  import { initTimelineFilter } from "@/lib/timeline-filter"
+
+  function init() {
+    const filter = document.querySelector<HTMLElement>("[data-timeline-filter]")
+    if (!filter) return
+    const paramKey = filter.getAttribute("data-param") ?? ""
+    initTimelineFilter({
+      filterEl: filter,
+      paramKey,
+      dataAttr: paramKey === "tag" ? "data-tags" : "data-category",
+    })
+  }
+
+  document.addEventListener("astro:page-load", init)
+</script>

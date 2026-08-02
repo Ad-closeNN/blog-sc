@@ -1,0 +1,58 @@
+---
+type Heading = {
+  depth: number
+  slug: string
+  text: string
+}
+
+type Props = {
+  headings: Heading[]
+}
+
+const { headings } = Astro.props
+const filteredHeadings = headings.filter((h) => h.depth >= 2 && h.depth <= 4)
+---
+
+{
+  filteredHeadings.length > 0 && (
+    <nav class="toc-container" aria-label="文章目录">
+      <div class="toc-header">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          class="lucide lucide-list-tree text-muted-foreground"
+        >
+          <path d="M21 12h-8" />
+          <path d="M21 6H8" />
+          <path d="M21 18h-8" />
+          <path d="M3 6v4c0 1.1.9 2 2 2h3" />
+          <path d="M3 6v12c0 1.1.9 2 2 2h3" />
+        </svg>
+        <span class="font-mono text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+          目录
+        </span>
+      </div>
+      <ul class="toc-list">
+        {filteredHeadings.map((h) => (
+          <li
+            class={`toc-item depth-${h.depth}`}
+          >
+            <a
+              href={`#${h.slug}`}
+              class="toc-link"
+            >
+              {h.text}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  )
+}

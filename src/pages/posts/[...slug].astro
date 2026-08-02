@@ -1,0 +1,259 @@
+---
+import BackToPostsBar from "@/components/BackToPostsBar.astro"
+import { Badge } from "@/components/ui/badge"
+import { buttonVariants } from "@/components/ui/button"
+import TableOfContents from "@/components/TableOfContents"
+import { site } from "@/config"
+import BaseLayout from "@/layouts/BaseLayout.astro"
+import {
+  formatDate,
+  getPosts,
+  postHref,
+  publicPath,
+  withNeighbors,
+  type Post,
+} from "@/lib/posts"
+import { cn } from "@/lib/utils"
+import { ArrowLeftIcon, ArrowRightIcon } from "lucide-react"
+import { render } from "astro:content"
+
+export async function getStaticPaths() {
+  const posts = await getPosts()
+  return withNeighbors(posts).map(({ post, prev, next }) => ({
+    params: { slug: post.id },
+    props: { post, prev, next },
+  }))
+}
+
+type Props = {
+  post: Post
+  prev: Post | null
+  next: Post | null
+}
+
+const { post, prev, next } = Astro.props
+const { Content, headings } = await render(post)
+const published = formatDate(post.data.published)
+const updated = post.data.updated ? formatDate(post.data.updated) : null
+const cover = publicPath(
+  post.data.customcover ||
+    (post.data.showcover !== false ? post.data.image : "")
+)
+const tags = post.data.tags
+const navBtn = buttonVariants({
+  variant: "outline",
+  className:
+    "h-auto min-h-12 gap-2 px-4 py-3 text-left whitespace-normal no-underline",
+})
+// 分享图：封面（customcover / image）优先，无封面兜底头像
+const ogImage = cover || site.avatarSrc
+const articleUrl = `${site.url}/posts/${post.id}/`
+// Article + BreadcrumbList 结构化数据
+const jsonLd = [
+  {
+    "@type": "Article",
+    headline: post.data.title,
+    description: post.data.description || post.data.title,
+    datePublished: post.data.published.toISOString(),
+    dateModified: (post.data.updated ?? post.data.published).toISOString(),
+    url: articleUrl,
+    image: ogImage ? `${site.url}${ogImage}` : undefined,
+    author: {
+      "@type": "Person",
+      name: site.shortName,
+      url: site.url,
+    },
+    publisher: {
+      "@type": "Organization",
+      name: site.name,
+    },
+    ...(tags.length > 0 ? { keywords: tags.join(", ") } : {}),
+  },
+  {
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "首页",
+        item: `${site.url}/`,
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "博文",
+        item: `${site.url}/posts/`,
+      },
+      {
+        "@type": "ListItem",
+        position: 3,
+        name: post.data.title,
+        item: articleUrl,
+      },
+    ],
+  },
+]
+---
+
+<BaseLayout
+  title={post.data.title}
+  description={post.data.description || post.data.title}
+  ogType="article"
+  publishedTime={post.data.published}
+  modifiedTime={post.data.updated ?? post.data.published}
+  tags={tags}
+  headings={headings}
+  ogImage={ogImage}
+  jsonLd={jsonLd}
+  mainClass="is-post-page"
+>
+  <div class="post-detail-container">
+    <div class="post-detail-grid">
+      <!-- Left Column: Main Article Content & Top Back Bar -->
+      <article class="post-article-main min-w-0">
+        <!-- 返回博文目录长条按钮：跟随正文块宽度，不进右侧 TOC 栏 -->
+        <BackToPostsBar />
+
+        <header class="article-header mb-7">
+          <p class="eyebrow">
+            <time datetime={post.data.published.toISOString()}>{published}</time
+            >
+            {
+              updated && updated !== published && (
+                <span class="ml-2">· 更新于 {updated}</span>
+              )
+            }
+            {
+              post.data.category && (
+                <span class="ml-2">· {post.data.category}</span>
+              )
+            }
+          </p>
+          <h1
+            class="m-0 font-heading text-[clamp(1.75rem,4vw,2.35rem)] leading-tight font-semibold tracking-tight"
+          >
+            {post.data.title}
+          </h1>
+          {
+            post.data.description && (
+              <p class="mt-4 text-muted-foreground">{post.data.description}</p>
+            )
+          }
+
+          <div class="mt-4 flex flex-wrap gap-2">
+            {post.data.pinned && <Badge variant="secondary">置顶</Badge>}
+            {post.data.outdated && <Badge variant="destructive">已失效</Badge>}
+            {tags.map((tag) => <Badge variant="outline">{tag}</Badge>)}
+          </div>
+
+          {
+            post.data.aiSummary && (
+              <div class="mt-5 rounded-xl border border-border bg-muted/50 p-4">
+                <p class="mb-1 text-sm font-medium">
+                  AI 摘要
+                  {post.data.aiSummaryModel && (
+                    <span class="text-muted-foreground">
+                      {" "}
+                      · {post.data.aiSummaryModel}
+                    </span>
+                  )}
+                </p>
+                <p class="m-0 text-sm leading-relaxed text-muted-foreground">
+                  {post.data.aiSummary}
+                </p>
+              </div>
+            )
+          }
+
+          {
+            post.data.outdated && (
+              <div class="mt-4 rounded-xl border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive">
+                本文部分内容可能已失效，请谨慎参考。
+              </div>
+            )
+          }
+        </header>
+
+        {
+          cover && (
+            <img
+              class="article-cover my-8 w-full rounded-lg border border-border bg-muted"
+              src={cover}
+              alt=""
+              loading="eager"
+            />
+          )
+        }
+
+        <div class="prose">
+          <Content />
+        </div>
+
+        <nav
+          class="mt-12 flex flex-col gap-3 border-t border-border pt-8 sm:flex-row sm:justify-between"
+          aria-label="相邻文章"
+        >
+          {
+            next ? (
+              <a href={postHref(next.id)} class={cn(navBtn, "justify-start")}>
+                <ArrowLeftIcon className="size-4 shrink-0" />
+                <span class="min-w-0">
+                  <span class="block text-xs text-muted-foreground">
+                    上一篇
+                  </span>
+                  <span class="line-clamp-1">{next.data.title}</span>
+                </span>
+              </a>
+            ) : (
+              <span />
+            )
+          }
+          {
+            prev ? (
+              <a
+                href={postHref(prev.id)}
+                class={cn(navBtn, "justify-end text-right sm:ml-auto")}
+              >
+                <span class="min-w-0">
+                  <span class="block text-xs text-muted-foreground">
+                    下一篇
+                  </span>
+                  <span class="line-clamp-1">{prev.data.title}</span>
+                </span>
+                <ArrowRightIcon className="size-4 shrink-0" />
+              </a>
+            ) : null
+          }
+        </nav>
+      </article>
+
+      <!-- Right Sidebar Column: Sticky Table of Contents (TOC) -->
+      <aside class="post-sidebar-right">
+        <TableOfContents client:load headings={headings} />
+      </aside>
+    </div>
+  </div>
+
+  <script is:inline>
+    document.addEventListener("click", (e) => {
+      const link = e.target.closest('.prose a[href^="#"]')
+      if (!link) return
+      const rawHref = link.getAttribute("href")
+      if (!rawHref || rawHref === "#") return
+      const targetId = decodeURIComponent(rawHref.slice(1))
+      const target = document.getElementById(targetId)
+      if (!target) return
+
+      e.preventDefault()
+      const reduceMotion = window.matchMedia(
+        "(prefers-reduced-motion: reduce)"
+      ).matches
+      // 与 TOC 一致：依赖 .prose [id] 的 scroll-margin-top
+      target.scrollIntoView({
+        behavior: reduceMotion ? "auto" : "smooth",
+        block: "start",
+      })
+      history.pushState(null, "", `#${targetId}`)
+    })
+  </script>
+</BaseLayout>

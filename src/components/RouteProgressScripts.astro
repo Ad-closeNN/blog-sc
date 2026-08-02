@@ -1,0 +1,151 @@
+<script is:inline>
+  ;(() => {
+    const installKey = "__siteRouteProgressInstalled"
+    if (window[installKey]) return
+    window[installKey] = true
+
+    const root = document.documentElement
+    const safetyDelay = 10000
+    let started = false
+    let runId = 0
+    let frameId = 0
+    let hideTimer = 0
+    let resetTimer = 0
+    let safetyTimer = 0
+
+    const setProgress = (value) => {
+      root.style.setProperty("--route-progress", String(value))
+    }
+
+    const isCurrentRun = (currentRun) => currentRun === runId
+
+    const clearScheduledWork = () => {
+      if (frameId) {
+        cancelAnimationFrame(frameId)
+        frameId = 0
+      }
+
+      clearTimeout(hideTimer)
+      clearTimeout(resetTimer)
+      clearTimeout(safetyTimer)
+      hideTimer = 0
+      resetTimer = 0
+      safetyTimer = 0
+    }
+
+    const resetProgress = () => {
+      runId += 1
+      started = false
+      clearScheduledWork()
+      root.classList.remove("is-route-loading", "is-route-loaded")
+      setProgress(0)
+    }
+
+    const showProgress = () => {
+      const currentRun = runId + 1
+      runId = currentRun
+      started = true
+      clearScheduledWork()
+      root.classList.remove("is-route-loaded")
+      root.classList.add("is-route-loading")
+      setProgress(0.18)
+      frameId = requestAnimationFrame(() => {
+        if (!isCurrentRun(currentRun)) return
+        frameId = 0
+        setProgress(0.62)
+      })
+      safetyTimer = window.setTimeout(() => {
+        if (!isCurrentRun(currentRun)) return
+        resetProgress()
+      }, safetyDelay)
+    }
+
+    const prepareProgress = () => {
+      if (!started) return
+      setProgress(0.78)
+    }
+
+    const swapProgress = () => {
+      if (!started) return
+      setProgress(0.92)
+    }
+
+    const finishProgress = () => {
+      if (!started) {
+        resetProgress()
+        return
+      }
+
+      const currentRun = runId
+      started = false
+      clearScheduledWork()
+      setProgress(1)
+      hideTimer = window.setTimeout(() => {
+        if (!isCurrentRun(currentRun)) return
+        root.classList.add("is-route-loaded")
+        resetTimer = window.setTimeout(() => {
+          if (!isCurrentRun(currentRun)) return
+          root.classList.remove("is-route-loading", "is-route-loaded")
+          setProgress(0)
+        }, 180)
+      }, 220)
+    }
+
+    document.addEventListener("astro:before-preparation", showProgress)
+    document.addEventListener("astro:after-preparation", prepareProgress)
+    document.addEventListener("astro:before-swap", swapProgress)
+    document.addEventListener("astro:page-load", finishProgress)
+    window.addEventListener("pageshow", (event) => {
+      if (event.persisted) resetProgress()
+    })
+  })()
+</script>
+
+<script is:inline>
+  ;(() => {
+    const root = document.documentElement
+    const homeExitClass = "is-navbar-home-exit"
+    let clearTimer = 0
+
+    const normalizePath = (value) => {
+      if (!value) return "/"
+
+      try {
+        const path =
+          typeof value === "string"
+            ? new URL(value, location.origin).pathname
+            : value.pathname
+        return path.endsWith("/") ? path : `${path}/`
+      } catch {
+        return "/"
+      }
+    }
+
+    const clearHomeExit = () => {
+      clearTimeout(clearTimer)
+      clearTimer = 0
+      root.classList.remove(homeExitClass)
+    }
+
+    let shouldAnimateHomeExit = false
+
+    document.addEventListener("astro:before-preparation", (event) => {
+      clearHomeExit()
+
+      const fromPath = normalizePath(event.from ?? location)
+      const toPath = normalizePath(event.to)
+      shouldAnimateHomeExit = fromPath === "/" && toPath !== "/"
+      if (shouldAnimateHomeExit) root.classList.add(homeExitClass)
+    })
+
+    document.addEventListener("astro:after-swap", () => {
+      if (shouldAnimateHomeExit) root.classList.add(homeExitClass)
+    })
+
+    document.addEventListener("astro:page-load", () => {
+      shouldAnimateHomeExit = false
+      if (!root.classList.contains(homeExitClass)) return
+      clearTimer = window.setTimeout(clearHomeExit, 420)
+    })
+  })()
+</script>

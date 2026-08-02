@@ -1,0 +1,36 @@
+---
+import { buttonVariants } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
+import { ArrowLeftIcon } from "lucide-react"
+---
+
+<a
+  href="/posts/"
+  class={cn(
+    buttonVariants({ variant: "outline", size: "lg" }),
+    "back-to-posts-bar group mb-6 flex w-full items-center justify-center gap-2 no-underline"
+  )}
+>
+  <ArrowLeftIcon className="size-4 shrink-0 transition-transform duration-200 group-hover:-translate-x-1" />
+  <span>返回博文目录</span>
+</a>
+
+<style>
+  .back-to-posts-bar {
+    transition:
+      background-color 200ms ease,
+      color 200ms ease,
+      border-color 200ms ease,
+      box-shadow 200ms ease,
+      transform 150ms ease;
+  }
+  /* 高亮填充：hover 时前景色填充 + 文字反白（与筛选 chip 选中态一致） */
+  .back-to-posts-bar:hover {
+    background: var(--foreground);
+    border-color: var(--foreground);
+    color: var(--background);
+  }
+  .back-to-posts-bar:active {
+    transform: translateY(1px);
+  }
+</style>

@@ -1,0 +1,66 @@
+---
+import PostHeatmap from "@/components/PostHeatmap.astro"
+import PostTimeline from "@/components/PostTimeline.astro"
+import TaxonomyPanel from "@/components/TaxonomyPanel.astro"
+import { navigation, site } from "@/config"
+import BaseLayout from "@/layouts/BaseLayout.astro"
+import { getPosts } from "@/lib/posts"
+
+const posts = await getPosts()
+const summary =
+  posts.length > 0
+    ? `共 ${posts.length} 篇 · 从 ${posts[posts.length - 1].data.published.getFullYear()} 年`
+    : "还没有文章"
+
+const jsonLd = {
+  "@type": "CollectionPage",
+  name: navigation.posts.label,
+  description: summary,
+  url: `${site.url}/posts/`,
+  isPartOf: {
+    "@type": "Blog",
+    name: site.name,
+    url: site.url,
+  },
+  mainEntity: {
+    "@type": "ItemList",
+    itemListElement: posts.map((post, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      url: `${site.url}/posts/${post.id}/`,
+      name: post.data.title,
+    })),
+  },
+}
+---
+
+<BaseLayout
+  title="博文"
+  description={summary}
+  ogType="website"
+  ogImage={site.avatarSrc}
+  jsonLd={jsonLd}
+  mainClass="is-posts-page"
+>
+  <section class="posts-hero mb-8 max-w-[760px]">
+    <h1 class="m-0 font-heading text-3xl font-semibold tracking-tight">
+      {navigation.posts.label}
+      <span class="ml-2 text-base font-normal text-muted-foreground">Posts</span
+      >
+    </h1>
+    <p class="mt-3 text-muted-foreground">{summary}</p>
+  </section>
+
+  <div class="posts-layout-grid">
+    <div class="posts-layout-main">
+      <PostTimeline posts={posts} />
+    </div>
+    <aside class="posts-layout-right" aria-label="标签与分类">
+      <TaxonomyPanel posts={posts} />
+    </aside>
+  </div>
+
+  <div class="mt-10">
+    <PostHeatmap posts={posts} />
+  </div>
+</BaseLayout>

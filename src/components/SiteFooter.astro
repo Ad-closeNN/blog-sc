@@ -1,0 +1,94 @@
+---
+import { links, navigationItems, site } from "@/config"
+
+const projectLinks = [links.me, links.github]
+const contactLinks = [links.email, links.x]
+---
+
+<footer class="site-footer border-t border-border">
+  <div
+    class="mx-auto grid w-[min(1120px,calc(100%_-_32px))] grid-cols-3 gap-6 pt-12 pb-10 max-[820px]:grid-cols-2 max-[640px]:w-[calc(100%_-_24px)] max-[640px]:grid-cols-1 max-[640px]:gap-8 max-[640px]:pt-9 max-[640px]:pb-8"
+  >
+    <div>
+      <h4
+        class="mb-3.5 font-mono text-[0.7rem] font-semibold tracking-[0.06em] text-muted-foreground uppercase"
+      >
+        导航
+      </h4>
+      <ul class="m-0 flex list-none flex-col gap-2 p-0">
+        {
+          navigationItems.map((item) => (
+            <li>
+              <a class="footer-link" href={item.href}>
+                {item.label}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+
+    <div>
+      <h4
+        class="mb-3.5 font-mono text-[0.7rem] font-semibold tracking-[0.06em] text-muted-foreground uppercase"
+      >
+        项目
+      </h4>
+      <ul class="m-0 flex list-none flex-col gap-2 p-0">
+        {
+          projectLinks.map((link) => (
+            <li>
+              <a
+                class="footer-link"
+                href={link.href}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {link.label}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+
+    <div>
+      <h4
+        class="mb-3.5 font-mono text-[0.7rem] font-semibold tracking-[0.06em] text-muted-foreground uppercase"
+      >
+        联系
+      </h4>
+      <ul class="m-0 flex list-none flex-col gap-2 p-0">
+        {
+          contactLinks.map((link) => (
+            <li>
+              <a
+                class="footer-link"
+                href={link.href}
+                target={link.external ? "_blank" : undefined}
+                rel={link.external ? "noopener noreferrer" : undefined}
+              >
+                {link.value}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+
+    <div
+      class="col-span-full mt-8 flex items-center justify-between max-[640px]:flex-col max-[640px]:items-start max-[640px]:gap-3"
+    >
+      <p class="m-0 font-mono text-xs text-muted-foreground">
+        {site.copyright}
+      </p>
+      <a
+        class="footer-back"
+        href="#"
+        onclick="const r=window.matchMedia('(prefers-reduced-motion: reduce)').matches;window.scrollTo({top:0,behavior:r?'auto':'smooth'});return false"
+      >
+        回到顶部 ↑
+      </a>
+    </div>
+  </div>
+</footer>

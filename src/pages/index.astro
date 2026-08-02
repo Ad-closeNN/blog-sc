@@ -1,17 +1,64 @@
 ---
-import Layout from "@/layouts/main.astro"
-import { Button } from "@/components/ui/button"
+import { buttonVariants } from "@/components/ui/button"
+import { navigation, site } from "@/config"
+import BaseLayout from "@/layouts/BaseLayout.astro"
+import { cn } from "@/lib/utils"
+
+const jsonLd = {
+  "@type": "WebSite",
+  name: site.name,
+  url: site.url,
+  description: site.description,
+  author: {
+    "@type": "Person",
+    name: site.shortName,
+    url: site.url,
+  },
+}
 ---
 
-<Layout>
-  <div class="flex min-h-svh p-6">
-    <div class="flex max-w-md min-w-0 flex-col gap-4 text-sm leading-loose">
-      <div>
-        <h1 class="font-medium">Project ready!</h1>
-        <p>You may now add components and start building.</p>
-        <p>We've already added the button component for you.</p>
-        <Button client:load className="mt-2">Button</Button>
-      </div>
+<BaseLayout
+  description={site.description}
+  ogType="website"
+  ogImage={site.avatarSrc}
+  jsonLd={jsonLd}
+>
+  <section
+    class="home-hero mx-auto grid min-h-[calc(100vh-220px)] content-center justify-items-center gap-4 text-center"
+  >
+    <span class="home-avatar-wrap relative inline-block size-36 rounded-full">
+      <img
+        class="size-full rounded-full border-2 border-border object-cover select-none"
+        src={site.avatarSrc}
+        alt={`${site.shortName} 的头像`}
+        width="144"
+        height="144"
+        draggable="false"
+      />
+      <span class="home-online-dot" aria-hidden="true"></span>
+    </span>
+    <h1 class="mt-1 mb-0 font-heading text-3xl font-semibold tracking-tight">
+      {site.shortName}
+    </h1>
+    <p class="eyebrow">个人博客</p>
+    <p class="m-0 max-w-md text-base leading-relaxed text-muted-foreground">
+      {site.description}
+    </p>
+    <div class="mt-3 flex w-[85%] flex-wrap justify-center gap-3">
+      <a
+        href={navigation.posts.href}
+        class={cn(buttonVariants({ size: "lg" }))}
+      >
+        {navigation.posts.label}
+      </a>
+      <a
+        href="https://me.adclosenn.top"
+        target="_blank"
+        rel="noopener noreferrer"
+        class={cn(buttonVariants({ variant: "outline", size: "lg" }))}
+      >
+        个人站
+      </a>
     </div>
-  </div>
-</Layout>
+  </section>
+</BaseLayout>
