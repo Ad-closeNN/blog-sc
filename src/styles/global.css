@@ -1058,7 +1058,8 @@ main {
 }
 
 .prose a {
-  color: var(--primary);
+  /* 默认淡色：muted 灰，随正文低调；hover 加深突出 */
+  color: var(--muted-foreground);
   font-weight: 500;
   text-decoration: underline;
   text-decoration-thickness: 0.08em;
@@ -1067,7 +1068,7 @@ main {
 }
 
 .prose a:hover {
-  color: var(--foreground);
+  color: var(--primary);
 }
 
 .prose ul {
