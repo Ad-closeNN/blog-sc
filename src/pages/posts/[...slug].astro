@@ -14,7 +14,11 @@ import {
   type Post,
 } from "@/lib/posts"
 import { cn } from "@/lib/utils"
-import { ArrowLeftIcon, ArrowRightIcon } from "lucide-react"
+import {
+  ArrowLeftIcon,
+  ArrowRightIcon,
+  SparklesIcon,
+} from "lucide-react"
 import { render } from "astro:content"
 
 export async function getStaticPaths() {
@@ -149,12 +153,14 @@ const jsonLd = [
 
           {
             post.data.aiSummary && (
-              <div class="mt-5 rounded-xl border border-border bg-muted/50 p-4">
-                <p class="mb-1 text-sm font-medium">
-                  AI 摘要
+              <div class="mt-5 rounded-xl border border-sky-200/70 bg-sky-50 p-4 dark:border-sky-500/20 dark:bg-sky-500/10">
+                <p
+                  class="mb-1 flex select-none items-center gap-1.5 text-sm font-medium"
+                >
+                  <SparklesIcon className="size-4 text-sky-600 dark:text-sky-400" />
+                  <span>AI 摘要</span>
                   {post.data.aiSummaryModel && (
                     <span class="text-muted-foreground">
-                      {" "}
                       · {post.data.aiSummaryModel}
                     </span>
                   )}
