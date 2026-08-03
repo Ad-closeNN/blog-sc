@@ -2,18 +2,19 @@
  * 同页原地筛选共享逻辑：
  * - 点击筛选按钮 → 过滤 .post-timeline-item、隐藏空月份组、合并同月折叠组、高亮匹配 Tag Badge
  * - 筛选状态写入 URL（?tag= / ?cat=），刷新/分享可恢复
- * - 再次点击当前选中项 → 取消筛选；多个筛选区块（tag / category）互斥联动
+ * - 支持 tag 与分类「同时选中」做 AND 交集：每类参数各自独立一值，
+ *   选出同时满足所有已选维度的文章；再次点击某维度已选项 → 仅取消该维度
  *
  * 供 TimelineFilter.astro（/tags/ /categories/ 页）与 TaxonomyPanel（/posts/ 页）复用。
  * 仅在浏览器端执行（由 Astro <script> 打包），SSR 不运行。
  */
 
-type FilterState = { paramKey: string; value: string } | null
-
-// 已注册的筛选参数集合（tag / cat），用于跨区块互斥清 URL
+// paramKey → 文章 data 属性（模块级注册表：跨组件共享，供 AND 交集读取各维度）
+const paramToAttr = new Map<string, string>()
+// 已注册的筛选参数集合（tag / cat），用于跨区块联动更新选中态
 const knownParams = new Set<string>()
-// 当前生效的筛选（跨组件共享单例，保证 tag 与 category 互斥）
-let activeFilter: FilterState = null
+// 当前生效的筛选：paramKey → value（每类参数唯一，维度间不互斥）
+const activeFilters = new Map<string, string>()
 
 export type TimelineFilterOptions = {
   /** 包含 [data-filter] 按钮的容器（chips 行或面板区块） */
@@ -29,6 +30,7 @@ export function initTimelineFilter({
   paramKey,
   dataAttr,
 }: TimelineFilterOptions) {
+  paramToAttr.set(paramKey, dataAttr)
   knownParams.add(paramKey)
   const buttons = [
     ...filterEl.querySelectorAll<HTMLButtonElement>("[data-filter]"),
@@ -48,10 +50,20 @@ export function initTimelineFilter({
     "[data-timeline-remaining]"
   )
 
-  function matches(item: HTMLElement, value: string) {
+  /** 单维度匹配：value 为 "*"（未选）时视为通过 */
+  function matchesDimension(item: HTMLElement, attr: string, value: string) {
     if (value === "*") return true
-    const values = (item.getAttribute(dataAttr) ?? "").split(" ")
+    const values = (item.getAttribute(attr) ?? "").split(" ")
     return values.includes(value)
+  }
+
+  /** AND 交集：item 需同时满足所有已选维度 */
+  function matches(item: HTMLElement) {
+    for (const [param, value] of activeFilters) {
+      const attr = paramToAttr.get(param)
+      if (attr && !matchesDimension(item, attr, value)) return false
+    }
+    return true
   }
 
   function mergeDuplicateMonths() {
@@ -85,29 +97,29 @@ export function initTimelineFilter({
   }
 
   function apply(value: string) {
-    activeFilter = value === "*" ? null : { paramKey, value }
+    // 写入/移除当前维度，其余维度保持不变（组合筛选）
+    if (value === "*") activeFilters.delete(paramKey)
+    else activeFilters.set(paramKey, value)
 
-    // 跨区块联动：更新所有已注册筛选按钮的选中态（tag 与 category 互斥）
+    // 联动更新所有按钮选中态：每维度独立
     document
       .querySelectorAll<HTMLButtonElement>("[data-filter][data-param]")
       .forEach((btn) => {
+        const pk = btn.getAttribute("data-param") ?? ""
         btn.setAttribute(
           "aria-pressed",
-          String(
-            activeFilter !== null &&
-              btn.getAttribute("data-param") === paramKey &&
-              btn.getAttribute("data-filter") === value
-          )
+          String(activeFilters.get(pk) === btn.getAttribute("data-filter"))
         )
       })
 
-    // URL：清除全部筛选参数后写入当前（保证互斥、URL 干净）
+    // URL：只写/删当前维度参数，其余维度参数保留（tag/cat 并存）
     const url = new URL(location.href)
-    knownParams.forEach((p) => url.searchParams.delete(p))
-    if (value !== "*") url.searchParams.set(paramKey, value)
+    const current = activeFilters.get(paramKey)
+    if (current) url.searchParams.set(paramKey, current)
+    else url.searchParams.delete(paramKey)
     history.replaceState(null, "", url)
 
-    const isAll = value === "*"
+    const isAll = activeFilters.size === 0
     // 筛选时展开折叠区，让全部文章可被过滤
     if (!isAll && remaining) {
       remaining.hidden = false
@@ -120,17 +132,18 @@ export function initTimelineFilter({
     }
 
     items.forEach((item) => {
-      item.hidden = !matches(item, value)
+      item.hidden = !matches(item)
     })
 
     // 高亮文章卡片里与当前筛选 Tag 对应的 Badge 边框
-    // 仅标签筛选时高亮匹配项；其他任何情况（分类筛选/全部）都清空高亮
-    const isTagFilter = paramKey === "tag" && !isAll
+    // 仅标签筛选维度生效时高亮匹配项；否则清空
+    const activeTag = activeFilters.get("tag")
     document
       .querySelectorAll<HTMLElement>("[data-filter-tag]")
       .forEach((badge) => {
         const on =
-          isTagFilter && badge.getAttribute("data-filter-tag") === value
+          activeTag != null &&
+          badge.getAttribute("data-filter-tag") === activeTag
         badge.classList.toggle("is-filter-active", on)
       })
 
@@ -153,13 +166,8 @@ export function initTimelineFilter({
   buttons.forEach((btn) => {
     btn.addEventListener("click", () => {
       const value = btn.getAttribute("data-filter") ?? "*"
-      // 再次点击当前选中项 → 取消筛选（回到全部）
-      if (
-        value !== "*" &&
-        activeFilter &&
-        activeFilter.paramKey === paramKey &&
-        activeFilter.value === value
-      ) {
+      // 再次点击当前维度已选项 → 取消该维度（其它维度保持）
+      if (activeFilters.get(paramKey) === value) {
         apply("*")
       } else {
         apply(value)
@@ -167,7 +175,7 @@ export function initTimelineFilter({
     })
   })
 
-  // 首次加载 / 客户端导航后，从 URL 恢复筛选状态
+  // 首次加载 / 客户端导航后，从 URL 恢复所有维度的筛选状态
   const initial = new URL(location.href).searchParams.get(paramKey)
   if (
     initial &&
