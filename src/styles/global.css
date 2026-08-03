@@ -1277,6 +1277,7 @@ main {
   background: color-mix(in oklch, var(--muted) 80%, var(--card));
   font-weight: 600;
   color: var(--foreground);
+  text-align: center;
 }
 
 @media (max-width: 820px) {
@@ -1342,7 +1343,7 @@ main.is-posts-page {
 @media (min-width: 1024px) {
   .post-sidebar-right {
     display: block;
-    width: 250px;
+    width: 300px;
     flex-shrink: 0;
     position: sticky;
     top: calc(48px + 1.75rem);
@@ -1396,6 +1397,8 @@ main.is-posts-page {
 /* Table of Contents (TOC) Component */
 .toc-container {
   padding: 0.5rem 0.25rem;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .toc-header {
