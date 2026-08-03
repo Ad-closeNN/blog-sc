@@ -281,7 +281,7 @@ body {
   position: relative;
   height: 100%;
   overflow: hidden;
-  background: color-mix(in oklch, var(--muted-foreground) 12%, transparent);
+  background: color-mix(in oklch, var(--muted-foreground) 10%, transparent);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }
@@ -292,7 +292,8 @@ body {
   width: 100%;
   transform: scaleX(var(--route-progress));
   transform-origin: left center;
-  background: var(--muted-foreground);
+  /* Neutral 最强对比：暗色近白（oklch .985）、亮色近黑（oklch .145），两主题都醒目 */
+  background: var(--foreground);
 }
 
 .route-progress-bar::after {
@@ -1138,6 +1139,66 @@ main {
 
 .prose blockquote p {
   margin: 0.35em 0;
+}
+
+/*
+ * Callout（:::type[标题] 容器指令，见 src/plugins/remark-callout.mjs）
+ * 与 blockquote 同族：圆角 + 左色条 + 浅底；每种类型一个语义强调色，
+ * 主体保持 neutral 灰，仅在色条/标题上着色。亮暗均用 color-mix 适配。
+ */
+.prose .callout {
+  --callout-accent: var(--primary);
+  --callout-accent-soft: color-mix(in oklch, var(--primary) 12%, transparent);
+  position: relative;
+  margin: 1.4em 0;
+  padding: 0.85rem 1.15rem 0.85rem 1.1rem;
+  border-left: 3.5px solid var(--callout-accent);
+  border-radius: 0 8px 8px 0;
+  background: var(--callout-accent-soft);
+  color: var(--foreground);
+}
+.prose .callout > :first-child {
+  margin-top: 0;
+}
+.prose .callout > :last-child {
+  margin-bottom: 0;
+}
+.prose .callout-title {
+  margin: 0 0 0.4em;
+  font-weight: 650;
+  font-size: 0.95em;
+  color: var(--callout-accent);
+  letter-spacing: -0.005em;
+}
+/* 标题段紧接正文时收紧间距；正文首段不再额外留上边距 */
+.prose .callout-title + * {
+  margin-top: 0;
+}
+
+/* 类型语义色：tip/info=neutral primary，note=灰，warning=琥珀，caution=红，important=primary 加重 */
+.prose .callout-tip,
+.prose .callout-info {
+  --callout-accent: var(--primary);
+  --callout-accent-soft: color-mix(in oklch, var(--primary) 10%, transparent);
+}
+.prose .callout-note {
+  --callout-accent: var(--muted-foreground);
+  --callout-accent-soft: color-mix(in oklch, var(--muted) 60%, transparent);
+}
+.prose .callout-warning {
+  --callout-accent: oklch(0.75 0.18 75);
+  --callout-accent-soft: color-mix(in oklch, oklch(0.75 0.18 75) 12%, transparent);
+}
+.prose .callout-caution {
+  --callout-accent: var(--destructive);
+  --callout-accent-soft: color-mix(in oklch, var(--destructive) 12%, transparent);
+}
+.prose .callout-important {
+  --callout-accent: var(--foreground);
+  --callout-accent-soft: color-mix(in oklch, var(--foreground) 8%, transparent);
+}
+.dark .prose .callout-warning {
+  --callout-accent: oklch(0.82 0.16 75);
 }
 
 .prose img {
