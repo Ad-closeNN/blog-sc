@@ -5,6 +5,7 @@ import react from "@astrojs/react"
 import sitemap from "@astrojs/sitemap"
 import tailwindcss from "@tailwindcss/vite"
 import { defineConfig } from "astro/config"
+import rehypeRaw from "rehype-raw"
 import remarkDirective from "remark-directive"
 
 import { remarkCallout } from "./src/plugins/remark-callout.mjs"
@@ -87,7 +88,7 @@ export default defineConfig({
   markdown: {
     processor: unified({
       remarkPlugins: [remarkDirective, remarkCallout],
-      rehypePlugins: [externalLinksTargetBlank, demoteMarkdownH1],
+      rehypePlugins: [rehypeRaw, externalLinksTargetBlank, demoteMarkdownH1],
     }),
     shikiConfig: {
       theme: "github-dark",

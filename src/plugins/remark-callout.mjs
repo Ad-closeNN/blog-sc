@@ -84,6 +84,71 @@ function rawSlice(source, node) {
   return source.slice(start, end)
 }
 
+// 卡片 uuid 计数器（构建期递增，确定性，避免 Math.random 在重建时抖动）
+let githubCardSeq = 0
+
+/**
+ * 生成 fuwari 同款 GitHub 仓库卡片的原始 HTML（含前端 fetch 脚本）。
+ * @param {string} repo - "owner/repo" 格式仓库名
+ * @returns {string}
+ */
+function githubCardHtml(repo) {
+  const uuid = `gc${(githubCardSeq++).toString(36)}${Date.now().toString(36).slice(-4)}`
+  const owner = repo.split("/")[0] ?? ""
+  const cardHref = `https://github.com/${repo}`
+  // 来自 fuwari rehype-component-github-card.mjs 的结构与内联脚本
+  return [
+    `<a id="${uuid}-card" class="card-github fetch-waiting" href="${cardHref}" target="_blank" rel="noopener noreferrer">`,
+    `  <div class="gc-titlebar">`,
+    `    <div class="gc-titlebar-left">`,
+    `      <div class="gc-owner"><div id="${uuid}-avatar" class="gc-avatar"></div><span class="gc-user">${owner}</span></div>`,
+    `      <div class="gc-slash">/</div>`,
+    `      <div class="gc-repo">${repo.split("/")[1] ?? ""}</div>`,
+    `    </div>`,
+    `    <div class="github-logo"></div>`,
+    `  </div>`,
+    `  <div id="${uuid}-description" class="gc-description">加载中…</div>`,
+    `  <div class="gc-infobar">`,
+    `    <div id="${uuid}-stars" class="gc-stars">--</div>`,
+    `    <div id="${uuid}-forks" class="gc-forks">--</div>`,
+    `    <div id="${uuid}-license" class="gc-license">--</div>`,
+    `    <span id="${uuid}-language" class="gc-language">--</span>`,
+    `  </div>`,
+    `<script type="text/javascript" defer>`,
+    `  ;(function(){`,
+    `    var el = document;`,
+    `    function set(id, txt){ var e = el.getElementById(id); if (e) e.textContent = txt; }`,
+    `    fetch('https://api.github.com/repos/${repo}', { referrerPolicy: "no-referrer" })`,
+    `      .then(function(r){ return r.json() })`,
+    `      .then(function(data){`,
+    `        set('${uuid}-description', (data.description || "No description").replace(/:[a-zA-Z0-9_]+:/g, ''));`,
+    `        set('${uuid}-language', data.language || "");`,
+    `        set('${uuid}-stars', (data.stargazers_count != null) ? format(data.stargazers_count) : "--");`,
+    `        set('${uuid}-forks', (data.forks != null) ? format(data.forks) : "--");`,
+    `        set('${uuid}-license', data.license ? data.license.spdx_id || "LICENSE" : "No license");`,
+    `        var av = el.getElementById('${uuid}-avatar');`,
+    `        if (av && data.owner && data.owner.avatar_url) {`,
+    `          av.style.backgroundImage = "url(" + data.owner.avatar_url + ")";`,
+    `          av.style.backgroundColor = "transparent";`,
+    `        }`,
+    `        var c = el.getElementById('${uuid}-card');`,
+    `        if (c) c.classList.remove("fetch-waiting");`,
+    `      })`,
+    `      .catch(function(){`,
+    `        var c = el.getElementById('${uuid}-card');`,
+    `        if (c) c.classList.add("fetch-error");`,
+    `        set('${uuid}-description', "加载失败");`,
+    `      });`,
+    `    function format(n){`,
+    `      try { return Intl.NumberFormat('en-US', { notation: "compact", maximumFractionDigits: 1 }).format(n).replace(/\\u202f/g, ''); }`,
+    `      catch (e) { return String(n); }`,
+    `    }`,
+    `  })();`,
+    `</script>`,
+    `</a>`,
+  ].join("\n")
+}
+
 export function remarkCallout() {
   /**
    * @param {any} tree
@@ -127,6 +192,17 @@ export function remarkCallout() {
         parent &&
         Array.isArray(parent.children)
       ) {
+        // ::github{repo="owner/repo"} → 渲染 GitHub 仓库卡片
+        if (node.type === "leafDirective" && node.name === "github") {
+          const repo = String(node.attributes?.repo ?? "").trim()
+          if (repo && repo.includes("/")) {
+            parent.children.splice(index, 1, {
+              type: "html",
+              value: githubCardHtml(repo),
+            })
+            return
+          }
+        }
         // 非容器指令：还原为原始正文文本（如 `6:40` 里的 `:40`），
         // 避免被渲染成空 <div>
         const raw = rawSlice(source, node)
