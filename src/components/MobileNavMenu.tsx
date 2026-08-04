@@ -5,9 +5,11 @@ import {
   ListTreeIcon,
   MenuIcon,
   MoonIcon,
+  SearchIcon,
   SunIcon,
 } from "lucide-react"
 
+import { SearchResults } from "@/components/SearchResults"
 import type { Heading } from "@/components/TableOfContents"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
@@ -26,6 +28,7 @@ import {
   SHEET_CLOSE_MS,
 } from "@/lib/scroll-to-heading"
 import { themeStore } from "@/lib/theme"
+import { useSearch } from "@/lib/useSearch"
 import { cn } from "@/lib/utils"
 
 type Props = {
@@ -214,6 +217,10 @@ export default function MobileNavMenu({ pathname, headings = [] }: Props) {
 
             <Separator />
 
+            <MobileSearchSection />
+
+            <Separator />
+
             <section className="space-y-2">
               <p className="text-[0.7rem] font-semibold tracking-widest text-muted-foreground uppercase">
                 外观
@@ -279,5 +286,58 @@ export default function MobileNavMenu({ pathname, headings = [] }: Props) {
         </SheetContent>
       </Sheet>
     </div>
+  )
+}
+
+/** 移动端抽屉内的站内搜索：输入框 + 内联结果列表 */
+function MobileSearchSection() {
+  const { status, search } = useSearch()
+  const [query, setQuery] = useState("")
+  const [results, setResults] = useState<Awaited<ReturnType<typeof search>>>([])
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const onInput = (value: string) => {
+    setQuery(value)
+    if (timerRef.current) clearTimeout(timerRef.current)
+    const trimmed = value.trim()
+    if (!trimmed) {
+      setResults([])
+      return
+    }
+    timerRef.current = setTimeout(async () => {
+      setResults(await search(value))
+    }, 200)
+  }
+
+  useEffect(
+    () => () => {
+      if (timerRef.current) clearTimeout(timerRef.current)
+    },
+    []
+  )
+
+  return (
+    <section className="space-y-2">
+      <p className="text-[0.7rem] font-semibold tracking-widest text-muted-foreground uppercase">
+        搜索文章
+      </p>
+      <div className="relative">
+        <SearchIcon className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+        <input
+          type="text"
+          role="combobox"
+          aria-label="站内搜索"
+          placeholder="搜索文章…"
+          value={query}
+          onChange={(e) => onInput(e.target.value)}
+          className="h-9 w-full rounded-lg border border-input bg-background pl-8 pr-3 text-sm text-foreground outline-none placeholder:text-muted-foreground transition-all focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+        />
+      </div>
+      {query.trim().length > 0 && (
+        <div className="max-h-64 overflow-y-auto rounded-lg border border-border bg-card">
+          <SearchResults status={status} results={results} query={query} />
+        </div>
+      )}
+    </section>
   )
 }

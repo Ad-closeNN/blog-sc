@@ -1,6 +1,7 @@
 ---
 import ThemeToggle from "@/components/ThemeToggle"
 import MobileNavMenu from "@/components/MobileNavMenu"
+import SearchBox from "@/components/SearchBox"
 import { navigation, site } from "@/config"
 import { ChevronRightIcon } from "lucide-react"
 import type { Heading } from "@/components/TableOfContents"
@@ -113,6 +114,7 @@ if (!isHome) {
 
   <!-- 桌面端显示 (md:flex) -->
   <div class="hidden items-center gap-2 md:flex">
+    <SearchBox client:load transition:persist />
     <ThemeToggle client:load transition:persist />
   </div>
 
