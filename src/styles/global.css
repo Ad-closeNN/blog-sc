@@ -1265,6 +1265,138 @@ main {
   border: 1px solid var(--border);
   border-radius: 10px;
   box-shadow: 0 4px 16px oklch(0 0 0 / 3%);
+  cursor: zoom-in;
+}
+
+/* 链接里的图不放大（保留跳转），光标回归默认 */
+.prose a img {
+  cursor: pointer;
+}
+
+/*
+ * 图片灯箱（见 src/components/ImageLightbox.astro）
+ * 单图查看：无左右切换；右上角「原图直连 / 关闭」两个按钮；不展示 alt。
+ * 平滑放大由 Web Animations 从缩略图位置 FLIP 到居中大图。
+ */
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(1rem, 4vw, 3rem);
+  opacity: 0;
+  transition: opacity 180ms ease;
+}
+
+.lightbox.is-open {
+  opacity: 1;
+}
+
+.lightbox-backdrop {
+  position: absolute;
+  inset: 0;
+  background: color-mix(in oklch, var(--background) 82%, transparent);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  cursor: zoom-out;
+}
+
+.lightbox-img {
+  position: relative;
+  max-width: min(100%, 1400px);
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  box-shadow: 0 24px 60px -20px oklch(0 0 0 / 35%);
+  /* transform 由 JS 动画驱动，这里只声明合成层意图 */
+  will-change: transform, opacity;
+}
+
+.lightbox-actions {
+  position: absolute;
+  top: clamp(0.75rem, 2vw, 1.25rem);
+  right: clamp(0.75rem, 2vw, 1.25rem);
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.lightbox-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 9999px;
+  border: 1px solid var(--border);
+  background: color-mix(in oklch, var(--card) 88%, transparent);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: var(--foreground);
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    transform 150ms ease;
+}
+
+.lightbox-btn:hover {
+  background: var(--muted);
+  border-color: color-mix(in oklch, var(--border) 60%, var(--muted-foreground));
+}
+
+.lightbox-btn:active {
+  transform: translateY(1px);
+}
+
+/* 缩放百分比：比图标按钮宽一些，等宽数字避免跳动 */
+.lightbox-scale {
+  width: auto;
+  min-width: 3.75rem;
+  padding-inline: 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 缩放组与「原图 / 关闭」之间的分隔线 */
+.lightbox-divider {
+  width: 1px;
+  height: 1.25rem;
+  margin-inline: 0.15rem;
+  background: color-mix(in oklch, var(--border) 80%, transparent);
+}
+
+/* 放大后可拖拽平移 */
+.lightbox-img.is-zoomed {
+  cursor: grab;
+}
+
+.lightbox-img.is-zoomed:active {
+  cursor: grabbing;
+}
+
+/* 灯箱打开时锁定背景滚动 */
+html.lightbox-open {
+  overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lightbox {
+    transition: none;
+  }
+
+  .lightbox-btn {
+    transition: none;
+  }
 }
 
 .prose table {

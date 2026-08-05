@@ -1,0 +1,380 @@
+---
+/**
+ * 图片灯箱：点击正文图片放大查看。
+ *
+ * - 平滑放大：从缩略图位置 FLIP 到居中大图（Web Animations，无布局抖动）
+ * - 缩放：右上角 −／百分比（点击复位）／+ 按钮，另支持滚轮缩放与放大后拖拽平移
+ * - 不做左右切换：单图查看，聚焦当前点击的那张
+ * - 右上角另有两个按钮：在新标签打开原图 / 关闭
+ * - 不展示 alt 文案（alt 仅留给读屏软件）
+ *
+ * 事件委托绑定 .prose img；document 级监听只注册一次，
+ * overlay 元素每次惰性查询，兼容 View Transitions 换页。
+ */
+---
+
+<div class="lightbox" data-lightbox hidden aria-hidden="true">
+  <div class="lightbox-backdrop" data-lightbox-close></div>
+
+  <div class="lightbox-actions">
+    <button
+      type="button"
+      class="lightbox-btn"
+      data-lightbox-zoom-out
+      title="缩小"
+      aria-label="缩小"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M5 12h14" />
+      </svg>
+    </button>
+    <button
+      type="button"
+      class="lightbox-btn lightbox-scale"
+      data-lightbox-reset
+      title="重置缩放"
+      aria-label="重置缩放"
+    >
+      <span data-lightbox-scale-text>100%</span>
+    </button>
+    <button
+      type="button"
+      class="lightbox-btn"
+      data-lightbox-zoom-in
+      title="放大"
+      aria-label="放大"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M5 12h14" />
+        <path d="M12 5v14" />
+      </svg>
+    </button>
+
+    <span class="lightbox-divider" aria-hidden="true"></span>
+
+    <a
+      class="lightbox-btn"
+      data-lightbox-raw
+      href="#"
+      target="_blank"
+      rel="noopener noreferrer"
+      title="在新标签页打开原图"
+      aria-label="在新标签页打开原图"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M15 3h6v6" />
+        <path d="M10 14 21 3" />
+        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+      </svg>
+    </a>
+    <button
+      type="button"
+      class="lightbox-btn"
+      data-lightbox-close
+      title="关闭"
+      aria-label="关闭"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M18 6 6 18" />
+        <path d="m6 6 12 12" />
+      </svg>
+    </button>
+  </div>
+
+  <img class="lightbox-img" data-lightbox-img src="" alt="" />
+</div>
+
+<script>
+  ;(() => {
+    const installKey = "__siteLightboxInstalled"
+    const flags = window as unknown as Record<string, boolean>
+    if (flags[installKey]) return
+    flags[installKey] = true
+
+    const CLOSE_MS = 180
+    const OPEN_MS = 260
+    const MIN_SCALE = 0.5
+    const MAX_SCALE = 5
+    const STEP = 0.25
+
+    let isOpen = false
+    let lastFocused: HTMLElement | null = null
+    let closeTimer = 0
+
+    // 缩放 / 平移状态
+    let scale = 1
+    let tx = 0
+    let ty = 0
+    let dragging = false
+    let dragId: number | null = null
+    let startX = 0
+    let startY = 0
+
+    const reduceMotion = () =>
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+
+    /** overlay 每次惰性查询：换页后 DOM 会被替换 */
+    const els = () => {
+      const root = document.querySelector<HTMLElement>("[data-lightbox]")
+      const img = document.querySelector<HTMLImageElement>("[data-lightbox-img]")
+      const raw = document.querySelector<HTMLAnchorElement>("[data-lightbox-raw]")
+      return root && img && raw ? { root, img, raw } : null
+    }
+
+    const clamp = (v: number, lo: number, hi: number) =>
+      Math.min(hi, Math.max(lo, v))
+
+    /** 把当前 scale / 平移写到 DOM（缩放到 1 时归零平移，避免残留偏移） */
+    function applyTransform(animated = false) {
+      const found = els()
+      if (!found) return
+      const { img } = found
+
+      if (scale <= 1) {
+        tx = 0
+        ty = 0
+      }
+      img.style.transition =
+        animated && !reduceMotion() ? "transform 160ms ease-out" : "none"
+      img.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`
+      img.classList.toggle("is-zoomed", scale > 1)
+
+      const label = document.querySelector<HTMLElement>(
+        "[data-lightbox-scale-text]"
+      )
+      if (label) label.textContent = `${Math.round(scale * 100)}%`
+    }
+
+    function setScale(next: number, animated = true) {
+      scale = clamp(Number(next.toFixed(3)), MIN_SCALE, MAX_SCALE)
+      applyTransform(animated)
+    }
+
+    function resetZoom(animated = true) {
+      scale = 1
+      tx = 0
+      ty = 0
+      applyTransform(animated)
+    }
+
+    /**
+     * 从缩略图位置 FLIP 到最终居中位置，做平滑放大。
+     * 注意：动画期间不要写 inline transform（applyTransform 会覆盖动画），
+     * 局部变量避免命名 scale 以免遮蔽模块级缩放状态。
+     */
+    function animateFrom(source: HTMLImageElement, target: HTMLImageElement) {
+      if (reduceMotion()) return
+      const from = source.getBoundingClientRect()
+      const to = target.getBoundingClientRect()
+      if (!from.width || !to.width) return
+
+      const dx = from.left + from.width / 2 - (to.left + to.width / 2)
+      const dy = from.top + from.height / 2 - (to.top + to.height / 2)
+      const ratio = from.width / to.width
+
+      target.animate(
+        [
+          {
+            transform: `translate(${dx}px, ${dy}px) scale(${ratio})`,
+            opacity: 0.55,
+          },
+          { transform: "translate(0, 0) scale(1)", opacity: 1 },
+        ],
+        { duration: OPEN_MS, easing: "cubic-bezier(0.22, 1, 0.36, 1)" }
+      )
+    }
+
+    function open(source: HTMLImageElement) {
+      const found = els()
+      if (!found) return
+      const { root, img, raw } = found
+
+      const src = source.currentSrc || source.src
+      if (!src) return
+
+      window.clearTimeout(closeTimer)
+      lastFocused = document.activeElement as HTMLElement | null
+
+      img.src = src
+      raw.href = src
+      root.hidden = false
+      // 每次打开都从 100% 起始
+      scale = 1
+      tx = 0
+      ty = 0
+      applyTransform(false)
+      // 触发 reflow，让 is-open 的淡入过渡生效
+      void root.offsetWidth
+      root.classList.add("is-open")
+      root.setAttribute("aria-hidden", "false")
+      document.documentElement.classList.add("lightbox-open")
+      isOpen = true
+
+      const run = () => animateFrom(source, img)
+      if (img.complete) run()
+      else img.addEventListener("load", run, { once: true })
+    }
+
+    function close() {
+      if (!isOpen) return
+      isOpen = false
+
+      const found = els()
+      if (!found) {
+        document.documentElement.classList.remove("lightbox-open")
+        return
+      }
+      const { root, img } = found
+
+      root.classList.remove("is-open")
+      root.setAttribute("aria-hidden", "true")
+      document.documentElement.classList.remove("lightbox-open")
+
+      const done = () => {
+        if (isOpen) return
+        root.hidden = true
+        img.src = ""
+      }
+      if (reduceMotion()) done()
+      else closeTimer = window.setTimeout(done, CLOSE_MS)
+
+      lastFocused?.focus?.()
+      lastFocused = null
+    }
+
+    document.addEventListener("click", (event) => {
+      const target = event.target as HTMLElement | null
+      if (!target) return
+
+      if (target.closest("[data-lightbox-close]")) {
+        close()
+        return
+      }
+      // 原图直连按钮：交给浏览器正常打开新标签
+      if (target.closest("[data-lightbox-raw]")) return
+
+      // 缩放按钮
+      if (target.closest("[data-lightbox-zoom-in]")) {
+        setScale(scale + STEP)
+        return
+      }
+      if (target.closest("[data-lightbox-zoom-out]")) {
+        setScale(scale - STEP)
+        return
+      }
+      if (target.closest("[data-lightbox-reset]")) {
+        resetZoom()
+        return
+      }
+
+      // 正文图片点击放大；包在链接里的图不拦截，保留跳转
+      const hit = target.closest<HTMLImageElement>(".prose img")
+      if (!hit || hit.closest("a")) return
+      event.preventDefault()
+      open(hit)
+    })
+
+    document.addEventListener("keydown", (event) => {
+      if (!isOpen) return
+      if (event.key === "Escape") {
+        close()
+      } else if (event.key === "+" || event.key === "=") {
+        event.preventDefault()
+        setScale(scale + STEP)
+      } else if (event.key === "-" || event.key === "_") {
+        event.preventDefault()
+        setScale(scale - STEP)
+      } else if (event.key === "0") {
+        event.preventDefault()
+        resetZoom()
+      }
+    })
+
+    // 滚轮缩放（灯箱打开时拦截页面滚动）
+    document.addEventListener(
+      "wheel",
+      (event) => {
+        if (!isOpen) return
+        const found = els()
+        if (!found || !found.root.contains(event.target as Node)) return
+        event.preventDefault()
+        setScale(scale + (event.deltaY < 0 ? STEP : -STEP), false)
+      },
+      { passive: false }
+    )
+
+    // 放大后拖拽平移
+    document.addEventListener("pointerdown", (event) => {
+      if (!isOpen || scale <= 1) return
+      const target = event.target as HTMLElement | null
+      if (!target?.closest("[data-lightbox-img]")) return
+      event.preventDefault()
+      dragging = true
+      dragId = event.pointerId
+      startX = event.clientX - tx
+      startY = event.clientY - ty
+    })
+
+    document.addEventListener("pointermove", (event) => {
+      if (!dragging || event.pointerId !== dragId) return
+      tx = event.clientX - startX
+      ty = event.clientY - startY
+      applyTransform(false)
+    })
+
+    const endDrag = (event: PointerEvent) => {
+      if (event.pointerId !== dragId) return
+      dragging = false
+      dragId = null
+    }
+    document.addEventListener("pointerup", endDrag)
+    document.addEventListener("pointercancel", endDrag)
+
+    // 客户端导航离开前复位，避免 overlay 残留
+    document.addEventListener("astro:before-swap", close)
+  })()
+</script>

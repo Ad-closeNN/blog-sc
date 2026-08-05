@@ -1,5 +1,6 @@
 ---
 import { ClientRouter } from "astro:transitions"
+import ImageLightbox from "@/components/ImageLightbox.astro"
 import RouteProgressScripts from "@/components/RouteProgressScripts.astro"
 import SiteFooter from "@/components/SiteFooter.astro"
 import SiteNavbar from "@/components/SiteNavbar.astro"
@@ -242,5 +243,6 @@ const ogImageAbs = Astro.props.ogImage
       <slot />
     </main>
     {showFooter && <SiteFooter />}
+    <ImageLightbox />
   </body>
 </html>
