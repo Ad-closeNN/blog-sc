@@ -17,6 +17,7 @@ export type SearchDoc = {
   url: string
   title: string
   description: string
+  cover: string
   content: string
   text: string
 }
@@ -25,6 +26,7 @@ export type SearchResult = {
   url: string
   title: string
   excerpt: string
+  cover: string
 }
 
 export type SearchStatus = "loading" | "ready" | "error"
@@ -63,7 +65,7 @@ function load(): Promise<Document> {
               encode: (s: string) => String(s).split(/\s+/).filter(Boolean),
             },
           ],
-          store: ["url", "title", "description", "content", "text"],
+          store: ["url", "title", "description", "cover", "content", "text"],
         },
       })
       for (const d of docs) idx.add(d)
@@ -185,6 +187,7 @@ async function search(term: string, limit = 10): Promise<SearchResult[]> {
       url: h.doc.url,
       title: h.doc.title,
       excerpt: makeExcerpt(h.doc.text, q),
+      cover: h.doc.cover ?? "",
     }))
   } catch {
     return []

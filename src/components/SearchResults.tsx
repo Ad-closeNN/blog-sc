@@ -50,20 +50,31 @@ export function SearchResults({
           href={r.url}
           onClick={() => onNavigate?.(r.url)}
           className={cn(
-            "block rounded-md px-2.5 py-2 transition-colors hover:bg-muted",
+            "flex items-start gap-2.5 rounded-md px-2.5 py-2 transition-colors hover:bg-muted",
             i === activeIndex && "bg-muted"
           )}
         >
-          <p className="mb-0.5 flex items-center gap-1 truncate text-sm font-medium text-foreground">
-            <span
-              className="truncate"
-              dangerouslySetInnerHTML={{ __html: highlightTitle(r.title, query) }}
+          {r.cover && (
+            <img
+              src={r.cover}
+              alt=""
+              loading="lazy"
+              className="mt-0.5 h-11 w-16 shrink-0 rounded border border-border/60 bg-muted object-cover"
             />
-          </p>
-          <p
-            className="pagefind-excerpt line-clamp-2 text-sm leading-relaxed text-muted-foreground"
-            dangerouslySetInnerHTML={{ __html: r.excerpt }}
-          />
+          )}
+          <span className="min-w-0 flex-1">
+            <span className="mb-0.5 block truncate text-sm font-medium text-foreground">
+              <span
+                dangerouslySetInnerHTML={{
+                  __html: highlightTitle(r.title, query),
+                }}
+              />
+            </span>
+            <span
+              className="pagefind-excerpt line-clamp-2 block text-sm leading-relaxed text-muted-foreground"
+              dangerouslySetInnerHTML={{ __html: r.excerpt }}
+            />
+          </span>
         </a>
       ))}
     </div>

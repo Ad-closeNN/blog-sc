@@ -2,7 +2,7 @@ import type { APIRoute } from "astro"
 import { Jieba } from "@node-rs/jieba"
 import { dict } from "@node-rs/jieba/dict"
 
-import { getPosts } from "@/lib/posts"
+import { getPostCover, getPosts } from "@/lib/posts"
 
 /**
  * 搜索索引 JSON 端点。
@@ -80,6 +80,8 @@ export const GET: APIRoute = async () => {
       url: `/posts/${p.id}/`,
       title: p.data.title,
       description: p.data.description ?? "",
+      // cover: 文章封面（复用列表页的 customcover / showcover / image 取值逻辑）
+      cover: getPostCover(p),
       // content: 分词后空格串，供 FlexSearch 索引
       content: tokenize(body),
       // text: 保留标点的纯文本，供摘要截取可读句子
