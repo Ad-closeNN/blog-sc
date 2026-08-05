@@ -153,6 +153,9 @@
 
     // 缩放 / 平移状态
     let scale = 1
+    // 滚轮缩放的目标值：rAF 每帧向它逼近，形成平滑跟随
+    let targetScale = 1
+    let zoomRaf = 0
     let tx = 0
     let ty = 0
     let dragging = false
@@ -213,14 +216,59 @@
 
     function setScale(next: number, animated = true) {
       scale = clamp(Number(next.toFixed(3)), MIN_SCALE, MAX_SCALE)
+      targetScale = scale
       applyTransform(animated)
     }
 
     function resetZoom(animated = true) {
+      cancelZoomLoop()
       scale = 1
+      targetScale = 1
       tx = 0
       ty = 0
       applyTransform(animated)
+    }
+
+    function cancelZoomLoop() {
+      if (zoomRaf) {
+        cancelAnimationFrame(zoomRaf)
+        zoomRaf = 0
+      }
+    }
+
+    /**
+     * 滚轮缩放：每帧把 scale 按比例逼近 targetScale（指数平滑），
+     * 比「一格跳一个固定步进」跟手且连续。不用 CSS transition——
+     * 连续滚动时每次重设 transition 会互相打断，反而更卡。
+     */
+    function runZoomLoop() {
+      if (zoomRaf) return
+      const tick = () => {
+        zoomRaf = 0
+        const diff = targetScale - scale
+        if (Math.abs(diff) < 0.001) {
+          scale = targetScale
+          applyTransform(false)
+          return
+        }
+        scale = Number((scale + diff * 0.22).toFixed(4))
+        applyTransform(false)
+        zoomRaf = requestAnimationFrame(tick)
+      }
+      zoomRaf = requestAnimationFrame(tick)
+    }
+
+    /** 按滚动量连续缩放（乘性步进，缩放感在各档位一致） */
+    function zoomByWheel(deltaY: number) {
+      const factor = Math.exp(-deltaY * 0.0015)
+      targetScale = clamp(targetScale * factor, MIN_SCALE, MAX_SCALE)
+      // 减少动态效果时直接到位，不做插值
+      if (reduceMotion()) {
+        scale = targetScale
+        applyTransform(false)
+        return
+      }
+      runZoomLoop()
     }
 
     /**
@@ -259,6 +307,7 @@
       if (!src) return
 
       window.clearTimeout(closeTimer)
+      cancelZoomLoop()
       lastFocused = document.activeElement as HTMLElement | null
 
       img.src = src
@@ -266,6 +315,7 @@
       root.hidden = false
       // 每次打开都从 100% 起始
       scale = 1
+      targetScale = 1
       tx = 0
       ty = 0
       applyTransform(false)
@@ -284,6 +334,7 @@
     function close() {
       if (!isOpen) return
       isOpen = false
+      cancelZoomLoop()
 
       const found = els()
       if (!found) {
@@ -376,7 +427,10 @@
         const found = els()
         if (!found || !found.root.contains(event.target as Node)) return
         event.preventDefault()
-        setScale(scale + (event.deltaY < 0 ? STEP : -STEP), false)
+        // 行/页模式的 deltaY 量级差异很大，先归一到像素量级
+        const unit =
+          event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? 100 : 1
+        zoomByWheel(event.deltaY * unit)
       },
       { passive: false }
     )
