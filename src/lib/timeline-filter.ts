@@ -9,6 +9,33 @@
  * 仅在浏览器端执行（由 Astro <script> 打包），SSR 不运行。
  */
 
+import { prefersReducedMotion } from "@/lib/scroll-to-heading"
+
+/** navbar 高度 + 呼吸间距，与 global.css 的 scroll-margin-top: calc(48px + 0.75rem) 对齐 */
+const NAVBAR_OFFSET = 48 + 12
+
+/**
+ * 筛选后把结果列表顶部滚进视口。
+ *
+ * 筛选会让列表变短：若用户此前滚在中下部，筛完当前视口可能已越过全部结果，
+ * 看起来「没有跳到第一个 / 没划到顶」。仅在列表顶部已滚出视口上方时才回滚，
+ * 已经能看到列表头部时保持不动，避免每次点筛选都无谓跳动。
+ */
+function scrollTimelineIntoView() {
+  const list =
+    document.querySelector<HTMLElement>(".post-timeline") ??
+    document.querySelector<HTMLElement>(".posts-layout-main")
+  if (!list) return
+
+  const top = list.getBoundingClientRect().top
+  if (top >= NAVBAR_OFFSET) return
+
+  window.scrollTo({
+    top: window.scrollY + top - NAVBAR_OFFSET,
+    behavior: prefersReducedMotion() ? "auto" : "smooth",
+  })
+}
+
 // paramKey → 文章 data 属性（模块级注册表：跨组件共享，供 AND 交集读取各维度）
 const paramToAttr = new Map<string, string>()
 // 已注册的筛选参数集合（tag / cat），用于跨区块联动更新选中态
@@ -172,6 +199,8 @@ export function initTimelineFilter({
       } else {
         apply(value)
       }
+      // 结果集变化后把列表顶部带回视口（仅用户点击时，URL 恢复不滚）
+      scrollTimelineIntoView()
     })
   })
 
