@@ -43,8 +43,14 @@
       type="button"
       class="lightbox-btn lightbox-scale"
       data-lightbox-reset
-      title="重置缩放"
-      aria-label="重置缩放"
+      data-lightbox-scrub
+      role="slider"
+      aria-label="缩放：左右拖动调整，点击重置"
+      title="左右拖动调整缩放，点击重置"
+      aria-valuemin="50"
+      aria-valuemax="500"
+      aria-valuenow="100"
+      aria-valuetext="100%"
     >
       <span data-lightbox-scale-text>100%</span>
     </button>
@@ -154,6 +160,15 @@
     let startX = 0
     let startY = 0
 
+    // 百分比控件拖动（scrub）状态：拖动幅度累积超阈值才算拖动，否则视为点击复位
+    const SCRUB_PER_PX = 0.005
+    const SCRUB_THRESHOLD = 3
+    let scrubbing = false
+    let scrubId: number | null = null
+    let scrubStartX = 0
+    let scrubStartScale = 1
+    let scrubMoved = false
+
     const reduceMotion = () =>
       window.matchMedia("(prefers-reduced-motion: reduce)").matches
 
@@ -183,10 +198,17 @@
       img.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`
       img.classList.toggle("is-zoomed", scale > 1)
 
+      const percent = Math.round(scale * 100)
       const label = document.querySelector<HTMLElement>(
         "[data-lightbox-scale-text]"
       )
-      if (label) label.textContent = `${Math.round(scale * 100)}%`
+      if (label) label.textContent = `${percent}%`
+
+      const scrub = document.querySelector<HTMLElement>("[data-lightbox-scrub]")
+      if (scrub) {
+        scrub.setAttribute("aria-valuenow", String(percent))
+        scrub.setAttribute("aria-valuetext", `${percent}%`)
+      }
     }
 
     function setScale(next: number, animated = true) {
@@ -307,6 +329,11 @@
         return
       }
       if (target.closest("[data-lightbox-reset]")) {
+        // 刚才是拖动调节，不当作点击复位
+        if (scrubMoved) {
+          scrubMoved = false
+          return
+        }
         resetZoom()
         return
       }
@@ -331,6 +358,13 @@
       } else if (event.key === "0") {
         event.preventDefault()
         resetZoom()
+      } else if (
+        document.activeElement?.hasAttribute("data-lightbox-scrub") &&
+        (event.key === "ArrowRight" || event.key === "ArrowLeft")
+      ) {
+        // 百分比控件聚焦时，方向键微调（role="slider" 语义）
+        event.preventDefault()
+        setScale(scale + (event.key === "ArrowRight" ? STEP : -STEP))
       }
     })
 
@@ -347,11 +381,33 @@
       { passive: false }
     )
 
-    // 放大后拖拽平移
     document.addEventListener("pointerdown", (event) => {
-      if (!isOpen || scale <= 1) return
+      if (!isOpen) return
       const target = event.target as HTMLElement | null
-      if (!target?.closest("[data-lightbox-img]")) return
+      if (!target) return
+
+      // 百分比控件：按住左右拖动调节缩放
+      const scrub = target.closest<HTMLElement>("[data-lightbox-scrub]")
+      if (scrub) {
+        event.preventDefault()
+        scrubbing = true
+        scrubId = event.pointerId
+        scrubStartX = event.clientX
+        scrubStartScale = scale
+        scrubMoved = false
+        scrub.classList.add("is-scrubbing")
+        // 指针捕获让拖出按钮范围仍跟手；无活跃指针时（合成事件）会抛错，忽略即可
+        try {
+          scrub.setPointerCapture?.(event.pointerId)
+        } catch {
+          /* 捕获失败不影响 document 级 pointermove 兜底 */
+        }
+        return
+      }
+
+      // 放大后拖拽平移图片
+      if (scale <= 1) return
+      if (!target.closest("[data-lightbox-img]")) return
       event.preventDefault()
       dragging = true
       dragId = event.pointerId
@@ -360,6 +416,13 @@
     })
 
     document.addEventListener("pointermove", (event) => {
+      if (scrubbing && event.pointerId === scrubId) {
+        const dx = event.clientX - scrubStartX
+        if (!scrubMoved && Math.abs(dx) < SCRUB_THRESHOLD) return
+        scrubMoved = true
+        setScale(scrubStartScale + dx * SCRUB_PER_PX, false)
+        return
+      }
       if (!dragging || event.pointerId !== dragId) return
       tx = event.clientX - startX
       ty = event.clientY - startY
@@ -367,6 +430,15 @@
     })
 
     const endDrag = (event: PointerEvent) => {
+      if (scrubbing && event.pointerId === scrubId) {
+        scrubbing = false
+        scrubId = null
+        document
+          .querySelector("[data-lightbox-scrub]")
+          ?.classList.remove("is-scrubbing")
+        // scrubMoved 留给随后的 click 判断是否跳过复位
+        return
+      }
       if (event.pointerId !== dragId) return
       dragging = false
       dragId = null

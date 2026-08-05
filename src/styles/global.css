@@ -1356,7 +1356,8 @@ main {
   transform: translateY(1px);
 }
 
-/* 缩放百分比：比图标按钮宽一些，等宽数字避免跳动 */
+/* 缩放百分比：比图标按钮宽一些，等宽数字避免跳动。
+   兼作可拖动滑块——按住左右拖调节缩放，点击复位。 */
 .lightbox-scale {
   width: auto;
   min-width: 3.75rem;
@@ -1365,6 +1366,20 @@ main {
   font-size: 0.75rem;
   font-weight: 500;
   font-variant-numeric: tabular-nums;
+  cursor: ew-resize;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* 拖动中：高亮并抑制按下位移，避免跟手时抖动 */
+.lightbox-scale.is-scrubbing {
+  background: var(--muted);
+  border-color: color-mix(in oklch, var(--border) 50%, var(--muted-foreground));
+}
+
+.lightbox-scale.is-scrubbing:active {
+  transform: none;
 }
 
 /* 缩放组与「原图 / 关闭」之间的分隔线 */
