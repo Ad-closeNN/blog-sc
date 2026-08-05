@@ -72,6 +72,12 @@ const ogImageAbs = Astro.props.ogImage
     <meta name="description" content={description} />
     <title>{title}</title>
     <link rel="canonical" href={canonicalUrl} />
+    <link
+      rel="alternate"
+      type="application/rss+xml"
+      title={site.name}
+      href="/rss.xml"
+    />
     {noindex && <meta name="robots" content="noindex, follow" />}
     {
       jsonLd && (
@@ -195,11 +201,7 @@ const ogImageAbs = Astro.props.ogImage
           const nav = document.querySelector(navSelector)
           const h1 = document.querySelector(h1Selector)
           // 只在文章页激活：navbar 有双层互换结构 + 页面有 h1
-          if (
-            !nav ||
-            !h1 ||
-            !nav.querySelector(".site-navbar-current-title")
-          )
+          if (!nav || !h1 || !nav.querySelector(".site-navbar-current-title"))
             return
 
           if (observer) observer.disconnect()
@@ -211,11 +213,10 @@ const ogImageAbs = Astro.props.ogImage
                 const slug = nav.querySelector(".site-navbar-current-slug")
                 const title = nav.querySelector(".site-navbar-current-title")
                 if (slug) slug.setAttribute("aria-hidden", String(gone))
-                if (title)
-                  title.setAttribute("aria-hidden", String(!gone))
+                if (title) title.setAttribute("aria-hidden", String(!gone))
               }
             },
-            { rootMargin: "-48px 0px 0px 0px", threshold: 0 },
+            { rootMargin: "-48px 0px 0px 0px", threshold: 0 }
           )
           observer.observe(h1)
         }

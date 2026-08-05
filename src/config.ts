@@ -41,4 +41,10 @@ export const links = {
     href: "mailto:adclosenn@qq.com",
     external: false,
   },
+  rss: {
+    label: "RSS 订阅",
+    value: "/rss.xml",
+    href: "/rss.xml",
+    external: false,
+  },
 } as const
