@@ -1808,7 +1808,37 @@ main.is-posts-page {
   }
 }
 
-/* Contribution heatmap (Neutral Theme for Sidebar & Bottom) */
+/* Contribution heatmap (GitHub-style Green)
+ * 配色用 CSS 变量但全部是固定 hex（light/dark 各一套），不用
+ * color-mix(var(--muted))：363 个空 cell 是切主题时最大重绘源，
+ * 固定 hex 避免每个 cell 因 var 链变化而 invalidate
+ * （配合 theme.ts 的 .no-theme-transition）。换色系只需改这两块。 */
+:root {
+  --heatmap-cell-l0: #f5f5f5;
+  --heatmap-cell-l0-border: #e5e5e5;
+  --heatmap-cell-l1: #9be9a8;
+  --heatmap-cell-l1-border: #6ccb7c;
+  --heatmap-cell-l2: #40c463;
+  --heatmap-cell-l2-border: #28a14c;
+  --heatmap-cell-l3: #30a14e;
+  --heatmap-cell-l3-border: #1d7a36;
+  --heatmap-cell-l4: #216e39;
+  --heatmap-cell-l4-border: #124a24;
+}
+
+.dark {
+  --heatmap-cell-l0: #262626;
+  --heatmap-cell-l0-border: #404040;
+  --heatmap-cell-l1: #0e4429;
+  --heatmap-cell-l1-border: #175e39;
+  --heatmap-cell-l2: #006d32;
+  --heatmap-cell-l2-border: #1a8a45;
+  --heatmap-cell-l3: #26a641;
+  --heatmap-cell-l3-border: #3cc060;
+  --heatmap-cell-l4: #39d353;
+  --heatmap-cell-l4-border: #54e876;
+}
+
 .heatmap-card {
   position: relative;
   min-width: 0;
@@ -1826,10 +1856,38 @@ main.is-posts-page {
 
 .heatmap-header {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
   margin-bottom: 1rem;
+}
+
+.heatmap-header-actions {
+  display: flex;
+  align-items: center;
+}
+
+.heatmap-year-select {
+  appearance: none;
+  padding: 0.2rem 0.55rem;
+  border-radius: 9999px;
+  background: color-mix(in oklch, var(--muted) 70%, var(--background));
+  border: 1px solid var(--border);
+  color: var(--foreground);
+  font-size: 0.7rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+
+.heatmap-year-select:hover {
+  border-color: color-mix(in oklch, var(--border) 60%, var(--muted-foreground));
+}
+
+.heatmap-year-select:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 1px;
 }
 
 .heatmap-header-main {
@@ -2003,66 +2061,35 @@ main.is-posts-page {
   gap: 3px;
 }
 
-/* Cell Styles & Neutral Color System
- * 沿用固定 hex 而非 color-mix(var(--muted)/--background)：
- * 363 个空 cell 是切主题时最大重绘源；固定色避免每个 cell
- * 在主题切换时都因 var 变化而 invalidate。取值对齐 shadcn
- * neutral 主题 token（light 越深越活跃，dark 越亮越活跃）。 */
+/* Cell Styles — 颜色由上方 --heatmap-cell-l0..l4 变量接管（固定 hex，勿改回 color-mix） */
 .heatmap-cell {
   display: block;
   width: 13px;
   height: 13px;
   border-radius: 3px;
-  background: #f5f5f5;
-  border: 1px solid #e5e5e5;
+  background: var(--heatmap-cell-l0);
+  border: 1px solid var(--heatmap-cell-l0-border);
   box-sizing: border-box;
 }
 
-/* Level Colors - Light Mode (Neutral Palette) */
 .heatmap-cell[data-level="1"] {
-  background: #e5e5e5;
-  border-color: #d4d4d4;
+  background: var(--heatmap-cell-l1);
+  border-color: var(--heatmap-cell-l1-border);
 }
 
 .heatmap-cell[data-level="2"] {
-  background: #d4d4d4;
-  border-color: #a3a3a3;
+  background: var(--heatmap-cell-l2);
+  border-color: var(--heatmap-cell-l2-border);
 }
 
 .heatmap-cell[data-level="3"] {
-  background: #a3a3a3;
-  border-color: #737373;
+  background: var(--heatmap-cell-l3);
+  border-color: var(--heatmap-cell-l3-border);
 }
 
 .heatmap-cell[data-level="4"] {
-  background: #737373;
-  border-color: #525252;
-}
-
-/* Level Colors - Dark Mode (Neutral Palette) */
-.dark .heatmap-cell {
-  background: #262626;
-  border-color: #404040;
-}
-
-.dark .heatmap-cell[data-level="1"] {
-  background: #404040;
-  border-color: #525252;
-}
-
-.dark .heatmap-cell[data-level="2"] {
-  background: #525252;
-  border-color: #737373;
-}
-
-.dark .heatmap-cell[data-level="3"] {
-  background: #a3a3a3;
-  border-color: #d4d4d4;
-}
-
-.dark .heatmap-cell[data-level="4"] {
-  background: #e5e5e5;
-  border-color: #f5f5f5;
+  background: var(--heatmap-cell-l4);
+  border-color: var(--heatmap-cell-l4-border);
 }
 
 /* Cell Interactive Hover Effects */
@@ -2091,6 +2118,23 @@ main.is-posts-page {
 .heatmap-grid .heatmap-cell[data-future="true"] {
   opacity: 0.15;
   cursor: default;
+}
+
+/* 今日标记：描边 + 中心圆点（仅 1 格用主题 var，代价可忽略） */
+.heatmap-grid .heatmap-cell[data-today="true"] {
+  z-index: 1;
+  box-shadow: 0 0 0 1.5px var(--primary);
+}
+
+.heatmap-grid .heatmap-cell[data-today="true"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 3px;
+  height: 3px;
+  border-radius: 9999px;
+  background: var(--primary);
 }
 
 .heatmap-cell[data-out-of-bounds="true"] {
@@ -2215,6 +2259,11 @@ main.is-posts-page {
   font-weight: 600;
 }
 
+/* 明细表按月汇总（每月一行：YYYY-MM + 篇数），首列对齐网格日期样式 */
+.heatmap-table th:first-child {
+  font-variant-numeric: tabular-nums;
+}
+
 /* Floating Tooltip Component */
 .heatmap-tooltip {
   position: absolute;
@@ -2268,6 +2317,11 @@ main.is-posts-page {
   .heatmap-cell[data-level="3"],
   .heatmap-cell[data-level="4"] {
     background: CanvasText;
+  }
+
+  .heatmap-cell[data-today="true"] {
+    box-shadow: none;
+    outline: 1px solid CanvasText;
   }
 }
 

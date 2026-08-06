@@ -1,78 +1,30 @@
 ---
-import { buildHeatmap, type Post } from "@/lib/posts"
+import type { HTMLAttributes } from "astro/types"
+
+import { buildHeatmapPayload, type Post } from "@/lib/posts"
+import {
+  deriveCells,
+  summarizeByMonth,
+  type HeatmapCellDerived,
+} from "@/lib/heatmap-core"
 
 type Props = {
   posts: Post[]
 }
 
-type HeatmapCellView = {
-  date: string
-  count: number
-  level: number
-  future: boolean
-  isCurrentYear: boolean
-  label: string
-}
-
 const { posts } = Astro.props
-const { weeks, monthLabels, year } = buildHeatmap(posts)
+const payload = buildHeatmapPayload(posts)
+const { today, currentYear, years } = payload
 
-const today = new Date().toISOString().slice(0, 10)
-const weekdayFormatter = new Intl.DateTimeFormat("zh-CN", {
-  weekday: "long",
-  timeZone: "UTC",
-})
-
-function formatCellLabel(date: string, count: number) {
-  const [y, month, day] = date.split("-").map(Number)
-  const weekday = weekdayFormatter.format(new Date(Date.UTC(y, month - 1, day)))
-  return `${y}年${month}月${day}日 ${weekday}，${count} 篇文章`
-}
-
-function levelOf(count: number) {
-  return Math.min(4, Math.max(0, count))
-}
-
-const yearStart = `${year}-01-01`
-const yearEnd = `${year}-12-31`
-
-const weekViews = weeks.map((week) =>
-  week.map((cell) => {
-    const isOutOfBounds = cell.date < yearStart || cell.date > yearEnd
-    return {
-      ...cell,
-      level: isOutOfBounds ? 0 : levelOf(cell.count),
-      future: cell.date > today,
-      isOutOfBounds,
-      label: formatCellLabel(cell.date, cell.count),
-    }
-  })
-)
-
-const allCells = weekViews.flat()
-
-// 仅统计当年 (1月1日 UTC+8 起) 且截至目前的数据
-const currentYearCells = allCells.filter(
-  (cell) => !cell.isOutOfBounds && !cell.future
-)
-const activeCells = currentYearCells.filter((cell) => cell.count > 0)
-const total = activeCells.reduce((sum, cell) => sum + cell.count, 0)
-const busiestCount = activeCells.reduce(
-  (highest, cell) => Math.max(highest, cell.count),
-  0
-)
-
-let longestStreak = 0
-let runningStreak = 0
-for (const cell of currentYearCells) {
-  runningStreak = cell.count > 0 ? runningStreak + 1 : 0
-  longestStreak = Math.max(longestStreak, runningStreak)
-}
-
-// 单排整年布局（GitHub 风格）：53 列小格子，底部全宽展示
-const monthMarkers = monthLabels[0].flatMap((month, index) =>
-  month ? [{ ...month, column: index + 1 }] : []
-)
+// 默认渲染当年；years 恒含当年（buildHeatmapPayload 保证）
+const defaultYear = currentYear
+const defaultData = years.find((y) => y.year === defaultYear) ?? years[0]!
+const defaultCells = deriveCells(defaultData.year, defaultData.counts, today)
+const defaultWeeks = defaultData.weeks
+const defaultStats = defaultData.stats
+const defaultYearLabel =
+  defaultYear === currentYear ? "今年" : `${defaultYear} 年`
+const defaultMonthSummaries = summarizeByMonth(defaultCells)
 
 const weekdays = [
   { row: 2, label: "一" },
@@ -80,7 +32,27 @@ const weekdays = [
   { row: 6, label: "五" },
 ]
 
-const descriptionId = `heatmap-description-${year}`
+const descriptionId = `heatmap-description-${defaultYear}`
+
+// 与服务端模板同源的 cell 属性规则；改动必须同步 <script> 里的 cellHTML。
+function cellAttrs(cell: HeatmapCellDerived): HTMLAttributes<"span"> {
+  const hidden = cell.outOfBounds || cell.future
+  return {
+    class: "heatmap-cell",
+    role: cell.outOfBounds ? undefined : "gridcell",
+    tabindex:
+      !cell.outOfBounds && !cell.future && cell.count > 0 ? 0 : undefined,
+    "data-level": cell.outOfBounds ? undefined : cell.level,
+    "data-date": cell.outOfBounds ? undefined : cell.date,
+    "data-count": cell.outOfBounds ? undefined : cell.count,
+    "data-label": cell.outOfBounds ? undefined : cell.label,
+    "data-future": cell.future ? "true" : undefined,
+    "data-out-of-bounds": cell.outOfBounds ? "true" : undefined,
+    "data-today": cell.today ? "true" : undefined,
+    "aria-label": hidden ? undefined : cell.label,
+    "aria-hidden": hidden ? "true" : undefined,
+  }
+}
 ---
 
 <section class="heatmap-card" aria-labelledby={`${descriptionId}-title`}>
@@ -104,11 +76,32 @@ const descriptionId = `heatmap-description-${year}`
             d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"
           ></path></svg
         >
-        <span class="heatmap-badge-text">{year} 写作记录</span>
+        <span class="heatmap-badge-text"
+          ><span class="heatmap-badge-year">{defaultData.year}</span> 写作记录</span
+        >
       </div>
       <h2 id={`${descriptionId}-title`} class="heatmap-title">
-        当年已发布 <strong class="heatmap-count-highlight">{total}</strong> 篇文章
+        <span class="heatmap-title-year">{defaultYearLabel}</span>
+        已发布
+        <strong class="heatmap-count-highlight heatmap-title-count"
+          >{defaultStats.total}</strong
+        >
+        篇文章
       </h2>
+    </div>
+
+    <div class="heatmap-header-actions">
+      <label class="sr-only" for="heatmap-year-select">切换年份</label>
+      <select id="heatmap-year-select" class="heatmap-year-select">
+        {
+          years.map((y) => (
+            <option value={y.year} selected={y.year === defaultYear}>
+              {y.year}
+              {y.year === currentYear ? "（今年）" : ""}
+            </option>
+          ))
+        }
+      </select>
     </div>
   </div>
 
@@ -141,7 +134,10 @@ const descriptionId = `heatmap-description-${year}`
       <div class="heatmap-stat-info">
         <span class="heatmap-stat-label">活跃天数</span>
         <span class="heatmap-stat-value"
-          >{activeCells.length} <span class="heatmap-stat-unit">天</span></span
+          ><span class="heatmap-stat-number" data-stat="activeDays"
+            >{defaultStats.activeDays}</span
+          >
+          <span class="heatmap-stat-unit">天</span></span
         >
       </div>
     </div>
@@ -166,7 +162,10 @@ const descriptionId = `heatmap-description-${year}`
       <div class="heatmap-stat-info">
         <span class="heatmap-stat-label">最长连击</span>
         <span class="heatmap-stat-value"
-          >{longestStreak} <span class="heatmap-stat-unit">天</span></span
+          ><span class="heatmap-stat-number" data-stat="longestStreak"
+            >{defaultStats.longestStreak}</span
+          >
+          <span class="heatmap-stat-unit">天</span></span
         >
       </div>
     </div>
@@ -191,14 +190,17 @@ const descriptionId = `heatmap-description-${year}`
       <div class="heatmap-stat-info">
         <span class="heatmap-stat-label">单日峰值</span>
         <span class="heatmap-stat-value"
-          >{busiestCount} <span class="heatmap-stat-unit">篇</span></span
+          ><span class="heatmap-stat-number" data-stat="busiestCount"
+            >{defaultStats.busiestCount}</span
+          >
+          <span class="heatmap-stat-unit">篇</span></span
         >
       </div>
     </div>
   </div>
 
-  <p id={descriptionId} class="sr-only">
-    热力图展示 {year} 年从 1 月 1 日开始的每日发文记录，颜色越深或越亮表示当天发布文章越多。
+  <p id={descriptionId} class="sr-only heatmap-sr-description">
+    热力图展示 {defaultData.year} 年从 1 月 1 日开始的每日发文记录，颜色越深或越亮表示当天发布文章越多。
   </p>
 
   <!-- Heatmap Graph (Single-Row Full-Year, GitHub Style) -->
@@ -218,12 +220,12 @@ const descriptionId = `heatmap-description-${year}`
         <div class="heatmap-main-grid">
           <div
             class="heatmap-months"
-            style={`--heatmap-columns: ${weeks.length}`}
+            style={`--heatmap-columns: ${defaultWeeks}`}
             aria-hidden="true"
           >
             {
-              monthMarkers.map((month) => (
-                <span style={`grid-column-start: ${month.column}`}>
+              defaultData.months.map((month) => (
+                <span style={`grid-column-start: ${month.col}`}>
                   {month.label}
                 </span>
               ))
@@ -232,37 +234,11 @@ const descriptionId = `heatmap-description-${year}`
 
           <div
             class="heatmap-grid"
-            style={`--heatmap-columns: ${weeks.length}`}
+            style={`--heatmap-columns: ${defaultWeeks}`}
             role="grid"
-            aria-label={`${year}年 每日发文数量`}
+            aria-label={`${defaultData.year}年 每日发文数量`}
           >
-            {
-              weekViews
-                .flat()
-                .map((cell) => (
-                  <span
-                    class="heatmap-cell"
-                    role={cell.isOutOfBounds ? undefined : "gridcell"}
-                    tabindex={
-                      !cell.isOutOfBounds && !cell.future && cell.count > 0
-                        ? 0
-                        : undefined
-                    }
-                    data-level={cell.isOutOfBounds ? undefined : cell.level}
-                    data-date={cell.isOutOfBounds ? undefined : cell.date}
-                    data-count={cell.isOutOfBounds ? undefined : cell.count}
-                    data-label={cell.isOutOfBounds ? undefined : cell.label}
-                    data-future={cell.future ? "true" : undefined}
-                    data-out-of-bounds={cell.isOutOfBounds ? "true" : undefined}
-                    aria-label={
-                      cell.isOutOfBounds || cell.future ? undefined : cell.label
-                    }
-                    aria-hidden={
-                      cell.isOutOfBounds || cell.future ? "true" : undefined
-                    }
-                  />
-                ))
-            }
+            {defaultCells.map((cell) => <span {...cellAttrs(cell)} />)}
           </div>
         </div>
       </div>
@@ -302,8 +278,8 @@ const descriptionId = `heatmap-description-${year}`
         >
       </summary>
       <div class="heatmap-table-wrap">
-        <table>
-          <caption class="sr-only">{year} 年有文章发布的日期</caption>
+        <table class="heatmap-table">
+          <caption class="sr-only">{defaultData.year} 年有文章发布的日期</caption>
           <thead>
             <tr>
               <th scope="col">日期</th>
@@ -312,11 +288,11 @@ const descriptionId = `heatmap-description-${year}`
           </thead>
           <tbody>
             {
-              activeCells.toReversed().map((cell) => (
+              defaultMonthSummaries.map((month) => (
                 <tr>
-                  <th scope="row">{cell.date}</th>
+                  <th scope="row">{month.key}</th>
                   <td>
-                    <span class="heatmap-table-count">{cell.count} 篇</span>
+                    <span class="heatmap-table-count">{month.total}</span>
                   </td>
                 </tr>
               ))
@@ -334,9 +310,84 @@ const descriptionId = `heatmap-description-${year}`
       <span class="heatmap-tooltip-date font-mono"></span>
     </div>
   </div>
+
+  <!-- 年份切换数据：紧凑 payload，经 define:vars 内联暴露到 window，
+       客户端 bundled script 据此重建网格（绕开 set:html 的 rolldown 解析）。 -->
+  <script is:inline define:vars={{ heatmapPayload: payload }}>
+    window.__heatmapPayload = heatmapPayload
+  </script>
 </section>
 
 <script>
+  import {
+    deriveCells,
+    summarizeByMonth,
+    type HeatmapCellDerived,
+    type HeatmapMonthSummary,
+  } from "../lib/heatmap-core"
+
+  type HeatmapPayloadClient = {
+    today: string
+    currentYear: number
+    years: {
+      year: number
+      weeks: number
+      counts: number[]
+      months: { col: number; label: string }[]
+      stats: {
+        activeDays: number
+        total: number
+        longestStreak: number
+        busiestCount: number
+      }
+    }[]
+  }
+
+  // 从 define:vars 内联脚本暴露的 window.__heatmapPayload 读取
+  function parseHeatmapData(): HeatmapPayloadClient | null {
+    const raw = (window as { __heatmapPayload?: unknown }).__heatmapPayload
+    if (!raw) return null
+    return raw as HeatmapPayloadClient
+  }
+
+  function escapeHtml(value: string) {
+    return value
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+  }
+
+  // 与服务端模板 cellAttrs 同源的 cell 属性；改动必须同步 frontmatter 的 cellAttrs。
+  function cellHTML(cell: HeatmapCellDerived) {
+    const hidden = cell.outOfBounds || cell.future
+    const attrs: string[] = ['class="heatmap-cell"']
+    if (!cell.outOfBounds) attrs.push('role="gridcell"')
+    if (!cell.outOfBounds && !cell.future && cell.count > 0)
+      attrs.push('tabindex="0"')
+    if (!cell.outOfBounds)
+      attrs.push(
+        `data-level="${cell.level}" data-date="${cell.date}" data-count="${cell.count}" data-label="${escapeHtml(cell.label)}"`
+      )
+    if (cell.future) attrs.push('data-future="true"')
+    if (cell.outOfBounds) attrs.push('data-out-of-bounds="true"')
+    if (cell.today) attrs.push('data-today="true"')
+    if (!hidden) attrs.push(`aria-label="${escapeHtml(cell.label)}"`)
+    if (hidden) attrs.push('aria-hidden="true"')
+    // 注意：span 不是 void 元素，不能自闭合，必须显式 </span>
+    return `<span ${attrs.join(" ")}></span>`
+  }
+
+  // 明细表按月汇总行 HTML（与 frontmatter 的 defaultMonthSummaries 渲染同源）
+  function monthSummariesHTML(months: HeatmapMonthSummary[]) {
+    return months
+      .map(
+        (m) =>
+          `<tr><th scope="row">${m.key}</th><td><span class="heatmap-table-count">${m.total}</span></td></tr>`
+      )
+      .join("")
+  }
+
   function initializeHeatmaps() {
     document
       .querySelectorAll<HTMLElement>(".heatmap-card")
@@ -344,10 +395,13 @@ const descriptionId = `heatmap-description-${year}`
         if (heatmap.dataset.ready === "true") return
         heatmap.dataset.ready = "true"
 
+        const payload = parseHeatmapData()
         const grids = heatmap.querySelectorAll<HTMLElement>(".heatmap-grid")
         const tooltip = heatmap.querySelector<HTMLElement>(".heatmap-tooltip")
         const tooltipValue = tooltip?.querySelector(".heatmap-tooltip-count")
         const tooltipDate = tooltip?.querySelector(".heatmap-tooltip-date")
+        const select =
+          heatmap.querySelector<HTMLSelectElement>(".heatmap-year-select")
         if (grids.length === 0 || !tooltip || !tooltipValue || !tooltipDate)
           return
 
@@ -394,6 +448,79 @@ const descriptionId = `heatmap-description-${year}`
           activeCell = null
           tooltip.hidden = true
         }
+
+        const setStat = (key: string, value: number) => {
+          const number = heatmap.querySelector<HTMLElement>(
+            `[data-stat="${key}"]`
+          )
+          if (number) number.textContent = String(value)
+        }
+
+        const renderYear = (year: number) => {
+          if (!payload) return
+          hideTooltip()
+          activeCell = null
+          const yData = payload.years.find((y) => y.year === year)
+          if (!yData) return
+          const cells = deriveCells(year, yData.counts, payload.today)
+
+          // 重建网格
+          grids.forEach((grid) => {
+            grid.style.setProperty("--heatmap-columns", String(yData.weeks))
+            grid.setAttribute("aria-label", `${year}年 每日发文数量`)
+            grid.innerHTML = cells.map(cellHTML).join("")
+          })
+
+          // 重建月份行
+          const months = heatmap.querySelector<HTMLElement>(".heatmap-months")
+          if (months) {
+            months.style.setProperty("--heatmap-columns", String(yData.weeks))
+            months.innerHTML = yData.months
+              .map(
+                (m) =>
+                  `<span style="grid-column-start:${m.col}">${m.label}</span>`
+              )
+              .join("")
+          }
+
+          // 标题 / badge / sr-only 描述
+          const badgeYear =
+            heatmap.querySelector<HTMLElement>(".heatmap-badge-year")
+          if (badgeYear) badgeYear.textContent = String(year)
+          const titleYear =
+            heatmap.querySelector<HTMLElement>(".heatmap-title-year")
+          if (titleYear)
+            titleYear.textContent =
+              year === payload.currentYear ? "今年" : `${year} 年`
+          const titleCount =
+            heatmap.querySelector<HTMLElement>(".heatmap-title-count")
+          if (titleCount) titleCount.textContent = String(yData.stats.total)
+          const srDesc = heatmap.querySelector<HTMLElement>(
+            ".heatmap-sr-description"
+          )
+          if (srDesc)
+            srDesc.textContent =
+              srDesc.textContent?.replace(/\d{4}/, String(year)) ?? ""
+
+          // 统计卡
+          setStat("activeDays", yData.stats.activeDays)
+          setStat("longestStreak", yData.stats.longestStreak)
+          setStat("busiestCount", yData.stats.busiestCount)
+
+          // 明细表按月重建
+          const caption = heatmap.querySelector(".heatmap-table caption")
+          if (caption)
+            caption.textContent = `${year} 年有文章发布的日期`
+          const tbody = heatmap.querySelector<HTMLElement>(
+            ".heatmap-table tbody"
+          )
+          if (tbody)
+            tbody.innerHTML = monthSummariesHTML(summarizeByMonth(cells))
+        }
+
+        select?.addEventListener("change", () =>
+          renderYear(Number(select.value))
+        )
 
         grids.forEach((grid) => {
           grid.addEventListener("pointerover", (event) => {

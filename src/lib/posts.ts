@@ -1,5 +1,15 @@
 import { getCollection, type CollectionEntry } from "astro:content"
 
+import {
+  aggregateCountByDate,
+  buildYearCells,
+  currentUtc8Year,
+  monthColumnsForYear,
+  serializeYear,
+  utc8Today,
+  type HeatmapPayload,
+} from "@/lib/heatmap-core"
+
 export type Post = CollectionEntry<"posts">
 
 export function publicPath(src?: string | null) {
@@ -93,92 +103,74 @@ export type HeatmapData = {
 }
 
 /**
- * 构建当年（当年 1 月 1 日 UTC+8 起算）的发文活跃度热力图数据。
+ * 构建某年（默认当年，UTC+8 起算）的发文活跃度热力图数据。
  * 每周以周日为第一天（GitHub 约定），列对齐。
  * 纯函数：不调用 getCollection，直接接收已取好的 posts，避免重复取数。
+ * 委托 heatmap-core 统一推导，保证与客户端切换重建逐字节一致。
  */
-export function buildHeatmap(posts: Post[]): HeatmapData {
-  // 计算当前 UTC+8 时间与当年年份
-  const now = new Date()
-  const utc8Date = new Date(now.getTime() + 8 * 3600 * 1000)
-  const currentYear = utc8Date.getUTCFullYear()
+export function buildHeatmap(posts: Post[], year?: number): HeatmapData {
+  const targetYear = year ?? currentUtc8Year()
+  const countByDate = aggregateCountByDate(posts)
+  const today = utc8Today()
+  const cells = buildYearCells(targetYear, countByDate, today)
 
-  // 聚合每日发文计数，key 为 YYYY-MM-DD
-  const countByDate = new Map<string, number>()
-  for (const post of posts) {
-    const key = formatDate(post.data.published)
-    countByDate.set(key, (countByDate.get(key) ?? 0) + 1)
-  }
-
-  // 起点 = 当年 1 月 1 日所在的周日
-  const jan1 = new Date(Date.UTC(currentYear, 0, 1))
-  const start = new Date(jan1)
-  start.setUTCDate(jan1.getUTCDate() - jan1.getUTCDay())
-
-  // 终点 = 当年 12 月 31 日所在的周六
-  const dec31 = new Date(Date.UTC(currentYear, 11, 31))
-  const end = new Date(dec31)
-  end.setUTCDate(dec31.getUTCDate() + (6 - dec31.getUTCDay()))
-
-  const totalDays =
-    Math.round((end.getTime() - start.getTime()) / (24 * 3600 * 1000)) + 1
-  const WEEKS = Math.ceil(totalDays / 7)
-
-  // 按周×天构建网格：weeks[weekIndex][dayIndex]
+  // 按周×天拆回二维：weeks[weekIndex][dayIndex]
   const weeks: HeatmapWeek[] = []
-  for (let w = 0; w < WEEKS; w++) {
-    const week: HeatmapCell[] = []
-    for (let d = 0; d < 7; d++) {
-      const cellDate = new Date(start)
-      cellDate.setUTCDate(start.getUTCDate() + w * 7 + d)
-      const year = cellDate.getUTCFullYear()
-      const month = String(cellDate.getUTCMonth() + 1).padStart(2, "0")
-      const day = String(cellDate.getUTCDate()).padStart(2, "0")
-      const key = `${year}-${month}-${day}`
-      const isCurrentYear = year === currentYear
-      week.push({
-        date: key,
-        count: countByDate.get(key) ?? 0,
-        isCurrentYear,
-      })
-    }
-    weeks.push(week)
+  for (let i = 0; i < cells.length; i += 7) {
+    weeks.push(
+      cells.slice(i, i + 7).map((c) => ({
+        date: c.date,
+        count: c.count,
+        isCurrentYear: c.isTargetYear,
+      }))
+    )
   }
 
-  // 月份标签：周第一天属于当年的新月份时显示
-  const monthLabels: ({ label: string } | null)[][] = Array.from(
-    { length: 7 },
-    () => Array.from({ length: WEEKS }, () => null)
-  )
-  let lastMonth = -1
-  for (let w = 0; w < WEEKS; w++) {
-    const cellDate = new Date(start)
-    cellDate.setUTCDate(start.getUTCDate() + w * 7)
-    let effectiveDate = cellDate
-    if (cellDate.getUTCFullYear() < currentYear) {
-      effectiveDate = new Date(Date.UTC(currentYear, 0, 1))
-    }
-    const month = effectiveDate.getUTCMonth()
-    if (month !== lastMonth && effectiveDate.getUTCFullYear() === currentYear) {
-      const label = `${month + 1}月`
-      monthLabels[0][w] = { label }
-      lastMonth = month
-    }
+  // 月份标签（第 0 行），其余行保持 null 兼容原结构
+  const monthLabels: ({ label: string } | null)[][] = [
+    Array.from({ length: weeks.length }, () => null),
+  ]
+  for (const m of monthColumnsForYear(targetYear)) {
+    monthLabels[0][m.col - 1] = { label: m.label }
   }
 
   let maxCount = 0
   let total = 0
-  for (const week of weeks) {
-    for (const cell of week) {
-      // 仅统计当年的发文总数
-      if (cell.isCurrentYear) {
-        if (cell.count > maxCount) maxCount = cell.count
-        total += cell.count
-      }
+  for (const cell of cells) {
+    // 仅统计目标年份的发文总数（含未来，不含越界），保持原语义
+    if (cell.isTargetYear) {
+      if (cell.count > maxCount) maxCount = cell.count
+      total += cell.count
     }
   }
 
-  return { weeks, monthLabels, maxCount, total, year: currentYear }
+  return { weeks, monthLabels, maxCount, total, year: targetYear }
+}
+
+/** 所有有文章的年份，降序 */
+export function availableYears(posts: Post[]): number[] {
+  const set = new Set<number>()
+  for (const post of posts) {
+    set.add(Number(formatDate(post.data.published).slice(0, 4)))
+  }
+  return [...set].sort((a, b) => b - a)
+}
+
+/** 构建热力图切换用的完整 payload：当年 + 所有有文章的年份，降序 */
+export function buildHeatmapPayload(posts: Post[]): HeatmapPayload {
+  const currentYear = currentUtc8Year()
+  const today = utc8Today()
+  const countByDate = aggregateCountByDate(posts)
+
+  const years = [currentYear, ...availableYears(posts)]
+    .filter((y, i, arr) => arr.indexOf(y) === i)
+    .sort((a, b) => b - a)
+
+  return {
+    today,
+    currentYear,
+    years: years.map((y) => serializeYear(y, countByDate, today)),
+  }
 }
 
 export type Taxonomy = {
