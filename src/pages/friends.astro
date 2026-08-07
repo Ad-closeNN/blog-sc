@@ -1,0 +1,118 @@
+---
+import { friends, friendsApply, site, type Friend } from "@/config"
+import BaseLayout from "@/layouts/BaseLayout.astro"
+
+type FriendGroup = { name: string; items: Friend[] }
+
+const groups = friends.reduce<FriendGroup[]>((acc, f) => {
+  const name = f.group ?? "友情链接"
+  const hit = acc.find((g) => g.name === name)
+  if (hit) hit.items.push(f)
+  else acc.push({ name, items: [f] })
+  return acc
+}, [])
+
+const description = `友情链接 · 共 ${friends.length} 个站点`
+const avatarUrl = `${site.url}${site.avatarSrc}`
+
+const jsonLd = {
+  "@type": "CollectionPage",
+  name: "友情链接",
+  description,
+  url: `${site.url}/friends/`,
+  isPartOf: {
+    "@type": "Blog",
+    name: site.name,
+    url: site.url,
+  },
+}
+---
+
+<BaseLayout
+  title="友情链接"
+  description={description}
+  ogType="website"
+  ogImage={site.avatarSrc}
+  jsonLd={jsonLd}
+  mainClass="is-posts-page"
+>
+  <section class="posts-hero mb-8 max-w-[760px]">
+    <h1 class="m-0 font-heading text-3xl font-semibold tracking-tight">
+      友情链接
+      <span class="ml-2 text-base font-normal text-muted-foreground"
+        >Friends</span
+      >
+    </h1>
+    <p class="mt-3 text-muted-foreground">{description}</p>
+  </section>
+
+  <div class="mx-auto w-[min(920px,calc(100%-32px))]">
+    {
+      groups.map((group) => (
+        <section class="mb-8">
+          <h2
+            class="mb-4 font-mono text-xs font-semibold tracking-[0.08em] text-muted-foreground uppercase"
+          >
+            {group.name}
+          </h2>
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {
+              group.items.map((f) => (
+                <a
+                  href={f.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="group flex flex-col gap-3 rounded-xl border border-border bg-card p-4 transition-colors hover:border-foreground/30 hover:bg-muted/60"
+                >
+                  <div class="flex items-center gap-3">
+                    <img
+                      src={f.avatar}
+                      alt=""
+                      loading="lazy"
+                      referrerpolicy="no-referrer"
+                      class="size-10 shrink-0 rounded-full border border-border object-cover"
+                    />
+                    <div class="min-w-0">
+                      <div class="truncate text-sm font-semibold">{f.name}</div>
+                      <div class="truncate font-mono text-xs text-muted-foreground">
+                        {new URL(f.url).host}
+                      </div>
+                    </div>
+                  </div>
+                  <p
+                    class="m-0 line-clamp-2 text-xs leading-relaxed text-muted-foreground"
+                  >
+                    {f.description}
+                  </p>
+                </a>
+              ))
+            }
+          </div>
+        </section>
+      ))
+    }
+
+    <!-- 申请友链 -->
+    <section class="mt-10 rounded-xl border border-border bg-card p-6">
+      <h2 class="mb-2 text-base font-semibold">{friendsApply.title}</h2>
+      <p class="text-sm text-muted-foreground">
+        {friendsApply.description}：
+        <a
+          class="text-primary underline-offset-4 hover:underline"
+          href={friendsApply.issueUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          >点击这里提交</a
+        >
+      </p>
+      <div class="my-4 h-px bg-border"></div>
+      <p class="mb-2 text-sm font-medium">本站友链信息</p>
+      <ul class="m-0 list-none space-y-1 font-mono text-xs text-muted-foreground">
+        <li>站点名称：{site.name}</li>
+        <li>站点描述：{site.description}</li>
+        <li>站点 URL：{site.url}</li>
+        <li>站点图片：{avatarUrl}</li>
+      </ul>
+    </section>
+  </div>
+</BaseLayout>

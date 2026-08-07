@@ -221,3 +221,41 @@ export function getTaxonomies(posts: Post[]) {
 
   return { tags: toList(tagMap), categories: toList(categoryMap) }
 }
+
+/**
+ * 全站字数统计。
+ * 从 post.body（glob loader 提供的原始 markdown 源）计数，CJK 逐字 + 拉丁逐词。
+ * blog-sc 无 remark 字数插件（fuwari 的 remarkPluginFrontmatter.words 不可用），
+ * 故从 markdown 源剥离语法后直接数。
+ */
+export function countWordsInMarkdown(md: string): number {
+  const text = md
+    .replace(/```[\s\S]*?```/g, " ")
+    .replace(/`[^`]*`/g, " ")
+    .replace(/^#{1,6}\s.*$/gm, " ")
+    .replace(/^>\s.*$/gm, " ")
+    .replace(/[*_~]+/g, "")
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, " ")
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
+    .replace(/https?:\/\/\S+/g, " ")
+    .replace(/:::\w*\s*$/gm, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+
+  const cjk = (text.match(/[㐀-鿿]/g) ?? []).length
+  const latin = (text.match(/[A-Za-z0-9]+(?:['’-][A-Za-z0-9]+)*/g) ?? []).length
+  return cjk + latin
+}
+
+let totalWordsCache: number | undefined
+
+export async function getTotalWords(): Promise<number> {
+  if (totalWordsCache !== undefined) return totalWordsCache
+  const posts = await getPosts()
+  totalWordsCache = posts.reduce(
+    (sum, p) => sum + countWordsInMarkdown(p.body ?? ""),
+    0
+  )
+  return totalWordsCache
+}

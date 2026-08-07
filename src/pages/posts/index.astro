@@ -1,6 +1,7 @@
 ---
 import PostHeatmap from "@/components/PostHeatmap.astro"
 import PostTimeline from "@/components/PostTimeline.astro"
+import SidebarStats from "@/components/SidebarStats"
 import TaxonomyPanel from "@/components/TaxonomyPanel.astro"
 import { navigation, site } from "@/config"
 import BaseLayout from "@/layouts/BaseLayout.astro"
@@ -55,8 +56,11 @@ const jsonLd = {
     <div class="posts-layout-main">
       <PostTimeline posts={posts} />
     </div>
-    <aside class="posts-layout-right" aria-label="标签与分类">
-      <TaxonomyPanel posts={posts} />
+    <aside class="posts-layout-right" aria-label="侧栏">
+      <div class="flex flex-col gap-6">
+        <TaxonomyPanel posts={posts} />
+        <SidebarStats client:load />
+      </div>
     </aside>
   </div>
 

@@ -1,8 +1,13 @@
 ---
-import { links, navigationItems, site } from "@/config"
+import { footer, links, navigationItems, site } from "@/config"
+import { getTotalWords } from "@/lib/posts"
 
 const projectLinks = [links.me, links.github]
 const contactLinks = [links.email, links.x, links.rss]
+
+const totalWords = await getTotalWords()
+const formattedTotalWords = totalWords.toLocaleString("zh-CN")
+const githubRepoUrl = `https://github.com/${site.githubRepo}`
 ---
 
 <footer class="site-footer border-t border-border">
@@ -89,6 +94,80 @@ const contactLinks = [links.email, links.x, links.rss]
       >
         回到顶部 ↑
       </a>
+    </div>
+
+    <!-- 备案 / RSS / Sitemap / 开源 / 字数 / 驱动 / Cloudflare -->
+    <div
+      class="col-span-full mt-8 flex flex-col items-center gap-3 text-center"
+    >
+      <p
+        class="m-0 font-mono text-xs leading-relaxed text-muted-foreground"
+      >
+        <a
+          class="footer-meta-link"
+          href={footer.beian.tea.href}
+          target="_blank"
+          rel="noopener noreferrer"
+          >{footer.beian.tea.text}</a
+        >
+        <span class="mx-2" aria-hidden="true">·</span>
+        <a
+          class="footer-meta-link"
+          href={footer.beian.moe.href}
+          target="_blank"
+          rel="noopener noreferrer"
+          >{footer.beian.moe.text}</a
+        >
+        <span class="mx-2" aria-hidden="true">·</span>
+        <a class="footer-meta-link" href={footer.rssHref}>RSS</a>
+        <span class="mx-2" aria-hidden="true">/</span>
+        <a
+          class="footer-meta-link"
+          href={footer.sitemapHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          >Sitemap</a
+        >
+        <span class="mx-2" aria-hidden="true">·</span>
+        博客代码
+        <a
+          class="footer-meta-link"
+          href={githubRepoUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          >{footer.openSource.text}</a
+        >
+      </p>
+      <p
+        class="m-0 font-mono text-xs leading-relaxed text-muted-foreground"
+      >
+        总计 {formattedTotalWords} 字
+        <span class="mx-2" aria-hidden="true">·</span>
+        由
+        <a
+          class="footer-meta-link"
+          href={footer.driver.astro.href}
+          target="_blank"
+          rel="noopener noreferrer"
+          > {footer.driver.astro.text} </a
+        >驱动
+        <span class="mx-2" aria-hidden="true">·</span>
+        <a
+          class="footer-meta-link"
+          href={footer.cloudflare.href}
+          target="_blank"
+          rel="noopener noreferrer"
+          >{footer.cloudflare.text}</a
+        >
+      </p>
+      <img
+        src="https://www.cloudflare-cn.com/img/logo-cloudflare-dark.svg"
+        alt="Cloudflare"
+        loading="lazy"
+        draggable="false"
+        class="h-[30px] w-auto select-none"
+        style="user-select: none; -webkit-user-drag: none"
+      />
     </div>
   </div>
 </footer>

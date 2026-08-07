@@ -1,17 +1,19 @@
 export const site = {
   name: "Ad_closeNN 的小站",
   shortName: "Ad_closeNN",
-  description: "Ad_closeNN の 小站，时不时会刷新一些野生东西",
+  description: "Ad_closeNN 的小站，专注于技术分享和记录生活",
   url: "https://blog.adclosenn.top",
   locale: "zh_CN",
   language: "zh-CN",
   avatarSrc: "/images/avatar.jpg",
   copyright: "© 2025-present Ad_closeNN.",
+  githubRepo: "Ad-closeNN/blog-sc",
 } as const
 
 export const navigation = {
   home: { label: "首页", href: "/" },
   posts: { label: "文章", href: "/posts/" },
+  friends: { label: "友链", href: "/friends/" },
 } as const
 
 export const navigationItems = Object.values(navigation)

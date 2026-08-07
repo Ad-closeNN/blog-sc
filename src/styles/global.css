@@ -155,6 +155,14 @@
     background: var(--primary);
     color: var(--primary-foreground);
   }
+
+  /* 代码块选中：代码块恒为 github-dark 深底（#24292e），独立于站点主题，
+     故用半透明白高亮（深底上清晰且不刺眼），与浅色模式全局近黑选中区分开——
+     否则浅色下选中叠深底几乎不可见。color:inherit 保留代码原文字色。 */
+  .astro-code ::selection {
+    background: rgba(255, 255, 255, 0.35);
+    color: inherit;
+  }
   /* 全局浏览器滚动条：shadcn neutral 风格，细条圆角 thumb、无轨道。
      基色用 --muted-foreground（随主题反色的 neutral 灰，暗色也够亮），
      hover 向 --foreground 靠拢（亮色加深、暗色提亮，两方向都更突出）。 */
@@ -733,6 +741,31 @@ main {
   text-transform: uppercase;
 }
 
+/* 文章浏览量：取到数据后整体上浮一次入场。
+   组件在 target 为 null 时不渲染，故动画只在挂载那一刻播一次，
+   后续数字累计跳动不会重播。 */
+.post-views {
+  display: inline-block;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .post-views {
+    animation: post-views-enter 0.42s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  @keyframes post-views-enter {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
 .footer-link {
   display: inline-flex;
   align-items: center;
@@ -761,6 +794,16 @@ main {
 }
 
 .footer-back:hover {
+  color: var(--foreground);
+}
+
+/* Footer meta 行链接（备案 / RSS / Sitemap / 开源 / 驱动）：纯文字 hover，视觉更轻 */
+.footer-meta-link {
+  color: var(--muted-foreground);
+  text-decoration: none;
+}
+
+.footer-meta-link:hover {
   color: var(--foreground);
 }
 

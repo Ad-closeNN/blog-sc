@@ -5,7 +5,7 @@ import RouteProgressScripts from "@/components/RouteProgressScripts.astro"
 import SiteFooter from "@/components/SiteFooter.astro"
 import SiteNavbar from "@/components/SiteNavbar.astro"
 import type { Heading } from "@/components/TableOfContents"
-import { site } from "@/config"
+import { gaConfig, site, umamiConfig } from "@/config"
 import { publicPath } from "@/lib/posts"
 import "@/styles/global.css"
 
@@ -224,6 +224,131 @@ const ogImageAbs = Astro.props.ogImage
         document.addEventListener("astro:page-load", setup)
         setup()
       })()
+    </script>
+
+    {
+      umamiConfig.enable && umamiConfig.websiteId && (
+        <script
+          async
+          src={`${umamiConfig.baseUrl}/script.js`}
+          data-website-id={umamiConfig.websiteId}
+        />
+      )
+    }
+    <!-- Google Analytics (GA4)。
+         走 View Transitions，所以 send_page_view:false + 在 astro:page-load
+         手动上报 page_view（该事件首屏也会触发），保证每页恰好一次、切页不漏报。 -->
+    <script is:inline define:vars={{ gaConfig }}>
+      {
+        /* eslint-disable */
+        if (gaConfig.enable && gaConfig.measurementId) {
+          window.dataLayer = window.dataLayer || []
+          if (!window.gtag) {
+            window.gtag = function () {
+              window.dataLayer.push(arguments)
+            }
+          }
+          if (!window.__gaLoaded) {
+            window.__gaLoaded = true
+            const gaScript = document.createElement("script")
+            gaScript.async = true
+            gaScript.src =
+              "https://www.googletagmanager.com/gtag/js?id=" +
+              gaConfig.measurementId
+            document.head.appendChild(gaScript)
+            window.gtag("js", new Date())
+            window.gtag("config", gaConfig.measurementId, {
+              send_page_view: false,
+            })
+          }
+          if (!window.__gaBound) {
+            window.__gaBound = true
+            document.addEventListener("astro:page-load", function () {
+              window.gtag("event", "page_view", {
+                page_location: window.location.href,
+                page_path: window.location.pathname,
+                page_title: document.title,
+              })
+            })
+          }
+        }
+        /* eslint-enable */
+      }
+    </script>
+
+    <!-- __blogUmami store：SidebarStats / PostViews 读统计用。
+         必须走 define:vars 注入 umamiConfig：is:inline 不做插值，
+         直接写 umamiConfig.xxx 会在运行时 ReferenceError。 -->
+    <script is:inline define:vars={{ umamiConfig }}>
+      {
+        /* eslint-disable */
+        const __umamiCfg = {
+          enable: umamiConfig.enable === true,
+          baseUrl: umamiConfig.baseUrl,
+          shareId: umamiConfig.shareId,
+          timezone: umamiConfig.timezone,
+        }
+        window["__blogUmami"] = window["__blogUmami"] || {
+          baseUrl: __umamiCfg.baseUrl,
+          timezone: __umamiCfg.timezone,
+          shareDataPromise: null,
+          // 只保留「同一次渲染内并发去重」的 promise 缓存，不缓存结果值：
+          // store 挂在 window 上、View Transitions 切页不会重建，
+          // 若缓存结果值则切页回来会显示旧浏览量。
+          statsPromiseCache: new Map(),
+          async getShareData() {
+            if (!__umamiCfg.enable) return null
+            if (this.shareDataPromise) return this.shareDataPromise
+            this.shareDataPromise = fetch(
+              `${__umamiCfg.baseUrl}/api/share/${__umamiCfg.shareId}`
+            )
+              .then((response) => {
+                if (!response.ok) throw new Error("获取分享信息失败")
+                return response.json()
+              })
+              .catch((error) => {
+                this.shareDataPromise = null
+                throw error
+              })
+            return this.shareDataPromise
+          },
+          async getStats(cacheKey, buildStatsUrl) {
+            if (this.statsPromiseCache.has(cacheKey))
+              return this.statsPromiseCache.get(cacheKey)
+            const requestPromise = new Promise((resolve, reject) => {
+              const doFetch = () => {
+                this.getShareData()
+                  .then(async (shareData) => {
+                    if (!shareData) {
+                      resolve(null)
+                      return
+                    }
+                    const statsUrl = buildStatsUrl(shareData.websiteId)
+                    const statsResponse = await fetch(statsUrl, {
+                      headers: { "x-umami-share-token": shareData.token },
+                    })
+                    if (!statsResponse.ok) throw new Error("获取统计数据失败")
+                    const statsData = await statsResponse.json()
+                    this.statsPromiseCache.delete(cacheKey)
+                    resolve(statsData)
+                  })
+                  .catch((error) => {
+                    this.statsPromiseCache.delete(cacheKey)
+                    reject(error)
+                  })
+              }
+              if ("requestIdleCallback" in window) {
+                requestIdleCallback(doFetch, { timeout: 3000 })
+              } else {
+                setTimeout(doFetch, 3000)
+              }
+            })
+            this.statsPromiseCache.set(cacheKey, requestPromise)
+            return requestPromise
+          },
+        }
+        /* eslint-enable */
+      }
     </script>
   </head>
   <body>
