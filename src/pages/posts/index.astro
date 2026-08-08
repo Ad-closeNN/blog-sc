@@ -8,9 +8,7 @@ import { getPosts } from "@/lib/posts"
 
 const posts = await getPosts()
 const summary =
-  posts.length > 0
-    ? `共 ${posts.length} 篇 · 从 ${posts[posts.length - 1].data.published.getFullYear()} 年`
-    : "还没有文章"
+  posts.length > 0 ? `共 ${posts.length} 篇` : "还没有文章"
 
 const jsonLd = {
   "@type": "CollectionPage",

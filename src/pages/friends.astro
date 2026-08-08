@@ -12,7 +12,7 @@ const groups = friends.reduce<FriendGroup[]>((acc, f) => {
   return acc
 }, [])
 
-const description = `友情链接 · 共 ${friends.length} 个站点`
+const description = `共 ${friends.length} 个站点`
 const avatarUrl = `${site.url}${site.avatarSrc}`
 
 const jsonLd = {
