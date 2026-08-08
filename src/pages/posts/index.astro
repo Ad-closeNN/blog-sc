@@ -1,5 +1,4 @@
 ---
-import PostHeatmap from "@/components/PostHeatmap.astro"
 import PostTimeline from "@/components/PostTimeline.astro"
 import SidebarStats from "@/components/SidebarStats"
 import TaxonomyPanel from "@/components/TaxonomyPanel.astro"
@@ -62,9 +61,5 @@ const jsonLd = {
         <SidebarStats client:load />
       </div>
     </aside>
-  </div>
-
-  <div class="mt-10">
-    <PostHeatmap posts={posts} />
   </div>
 </BaseLayout>

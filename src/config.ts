@@ -3,7 +3,7 @@
 export const site = {
   name: "Ad_closeNN 的小站",
   shortName: "Ad_closeNN",
-  description: "Ad_closeNN 的小站，专注于技术分享和记录生活",
+  description: "永远相信美好的事情即将发生",
   url: "https://blog.adclosenn.top",
   locale: "zh_CN",
   language: "zh-CN",

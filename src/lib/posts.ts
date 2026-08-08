@@ -1,15 +1,5 @@
 import { getCollection, type CollectionEntry } from "astro:content"
 
-import {
-  aggregateCountByDate,
-  buildYearCells,
-  currentUtc8Year,
-  monthColumnsForYear,
-  serializeYear,
-  utc8Today,
-  type HeatmapPayload,
-} from "@/lib/heatmap-core"
-
 export type Post = CollectionEntry<"posts">
 
 export function publicPath(src?: string | null) {
@@ -84,93 +74,6 @@ export function groupPostsByMonth(posts: Post[]) {
 
 export function postHref(id: string) {
   return `/posts/${id}/`
-}
-
-export type HeatmapCell = {
-  date: string
-  count: number
-  isCurrentYear: boolean
-}
-
-export type HeatmapWeek = HeatmapCell[]
-
-export type HeatmapData = {
-  weeks: HeatmapWeek[]
-  monthLabels: ({ label: string } | null)[][]
-  maxCount: number
-  total: number
-  year: number
-}
-
-/**
- * 构建某年（默认当年，UTC+8 起算）的发文活跃度热力图数据。
- * 每周以周日为第一天（GitHub 约定），列对齐。
- * 纯函数：不调用 getCollection，直接接收已取好的 posts，避免重复取数。
- * 委托 heatmap-core 统一推导，保证与客户端切换重建逐字节一致。
- */
-export function buildHeatmap(posts: Post[], year?: number): HeatmapData {
-  const targetYear = year ?? currentUtc8Year()
-  const countByDate = aggregateCountByDate(posts)
-  const today = utc8Today()
-  const cells = buildYearCells(targetYear, countByDate, today)
-
-  // 按周×天拆回二维：weeks[weekIndex][dayIndex]
-  const weeks: HeatmapWeek[] = []
-  for (let i = 0; i < cells.length; i += 7) {
-    weeks.push(
-      cells.slice(i, i + 7).map((c) => ({
-        date: c.date,
-        count: c.count,
-        isCurrentYear: c.isTargetYear,
-      }))
-    )
-  }
-
-  // 月份标签（第 0 行），其余行保持 null 兼容原结构
-  const monthLabels: ({ label: string } | null)[][] = [
-    Array.from({ length: weeks.length }, () => null),
-  ]
-  for (const m of monthColumnsForYear(targetYear)) {
-    monthLabels[0][m.col - 1] = { label: m.label }
-  }
-
-  let maxCount = 0
-  let total = 0
-  for (const cell of cells) {
-    // 仅统计目标年份的发文总数（含未来，不含越界），保持原语义
-    if (cell.isTargetYear) {
-      if (cell.count > maxCount) maxCount = cell.count
-      total += cell.count
-    }
-  }
-
-  return { weeks, monthLabels, maxCount, total, year: targetYear }
-}
-
-/** 所有有文章的年份，降序 */
-export function availableYears(posts: Post[]): number[] {
-  const set = new Set<number>()
-  for (const post of posts) {
-    set.add(Number(formatDate(post.data.published).slice(0, 4)))
-  }
-  return [...set].sort((a, b) => b - a)
-}
-
-/** 构建热力图切换用的完整 payload：当年 + 所有有文章的年份，降序 */
-export function buildHeatmapPayload(posts: Post[]): HeatmapPayload {
-  const currentYear = currentUtc8Year()
-  const today = utc8Today()
-  const countByDate = aggregateCountByDate(posts)
-
-  const years = [currentYear, ...availableYears(posts)]
-    .filter((y, i, arr) => arr.indexOf(y) === i)
-    .sort((a, b) => b - a)
-
-  return {
-    today,
-    currentYear,
-    years: years.map((y) => serializeYear(y, countByDate, today)),
-  }
 }
 
 export type Taxonomy = {

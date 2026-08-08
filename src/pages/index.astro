@@ -40,24 +40,16 @@ const jsonLd = {
     <h1 class="mt-1 mb-0 font-heading text-3xl font-semibold tracking-tight">
       {site.shortName}
     </h1>
-    <p class="eyebrow">个人网站</p>
+    <p class="eyebrow">个人博客</p>
     <p class="m-0 max-w-md text-base leading-relaxed text-muted-foreground">
       {site.description}
     </p>
-    <div class="mt-3 flex w-[85%] flex-wrap justify-center gap-3">
+    <div class="mt-3 flex w-full max-w-md">
       <a
         href={navigation.posts.href}
-        class={cn(buttonVariants({ size: "lg" }))}
+        class={cn(buttonVariants({ size: "lg" }), "w-full")}
       >
-        {navigation.posts.label}
-      </a>
-      <a
-        href="https://me.adclosenn.top"
-        target="_blank"
-        rel="noopener noreferrer"
-        class={cn(buttonVariants({ variant: "outline", size: "lg" }))}
-      >
-        个人站
+        阅读文章
       </a>
     </div>
   </section>

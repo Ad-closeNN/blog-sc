@@ -28,8 +28,8 @@ function getServerSnapshot() {
  *
  * - callback 内先挂 .no-theme-transition 禁用全站非 body transition 再切 .dark：
  *   截图 new 捕获到的是最终态而非过渡中间帧，crossfade 干净。
- *   （blog-sc 有 376 heatmap cell + 标签/筛选 chip + shadcn 基础件等常驻
- *   color/border transition，不禁用则截图 new 会捕获中间帧，淡入后显色错乱。）
+ *   （blog-sc 有标签/筛选 chip + shadcn 基础件等常驻 color/border
+ *   transition，不禁用则截图 new 会捕获中间帧，淡入后显色错乱。）
  * - .no-theme-transition 的移除时机：等 View Transition 的 finished Promise
  *   resolve（crossfade 完全结束）后才移除。若用双帧 rAF 提前移除，非 body
  *   元素的常驻 transition 会在 crossfade 途中恢复，与 VT 截图层合成叠加，
