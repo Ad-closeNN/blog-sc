@@ -1,6 +1,0 @@
-export * from "./site"
-export * from "./profile"
-export * from "./footer"
-export * from "./friends"
-export * from "./umami"
-export * from "./ga"

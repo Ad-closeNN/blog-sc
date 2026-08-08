@@ -1,9 +1,6 @@
 ---
-import { footer, links, navigationItems, site } from "@/config"
+import { footer, site } from "@/config"
 import { getTotalWords } from "@/lib/posts"
-
-const projectLinks = [links.me, links.github]
-const contactLinks = [links.email, links.x, links.rss]
 
 const totalWords = await getTotalWords()
 const formattedTotalWords = totalWords.toLocaleString("zh-CN")
@@ -12,77 +9,10 @@ const githubRepoUrl = `https://github.com/${site.githubRepo}`
 
 <footer class="site-footer border-t border-border">
   <div
-    class="mx-auto grid w-[min(1120px,calc(100%_-_32px))] grid-cols-3 gap-6 pt-12 pb-10 max-[820px]:grid-cols-2 max-[640px]:w-[calc(100%_-_24px)] max-[640px]:grid-cols-1 max-[640px]:gap-8 max-[640px]:pt-9 max-[640px]:pb-8"
+    class="mx-auto flex w-[min(1120px,calc(100%_-_32px))] flex-col gap-6 pt-12 pb-10 max-[640px]:w-[calc(100%_-_24px)] max-[640px]:pt-9 max-[640px]:pb-8"
   >
-    <div>
-      <h4
-        class="mb-3.5 font-mono text-[0.7rem] font-semibold tracking-[0.06em] text-muted-foreground uppercase"
-      >
-        导航
-      </h4>
-      <ul class="m-0 flex list-none flex-col gap-2 p-0">
-        {
-          navigationItems.map((item) => (
-            <li>
-              <a class="footer-link" href={item.href}>
-                {item.label}
-              </a>
-            </li>
-          ))
-        }
-      </ul>
-    </div>
-
-    <div>
-      <h4
-        class="mb-3.5 font-mono text-[0.7rem] font-semibold tracking-[0.06em] text-muted-foreground uppercase"
-      >
-        项目
-      </h4>
-      <ul class="m-0 flex list-none flex-col gap-2 p-0">
-        {
-          projectLinks.map((link) => (
-            <li>
-              <a
-                class="footer-link"
-                href={link.href}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {link.label}
-              </a>
-            </li>
-          ))
-        }
-      </ul>
-    </div>
-
-    <div>
-      <h4
-        class="mb-3.5 font-mono text-[0.7rem] font-semibold tracking-[0.06em] text-muted-foreground uppercase"
-      >
-        联系
-      </h4>
-      <ul class="m-0 flex list-none flex-col gap-2 p-0">
-        {
-          contactLinks.map((link) => (
-            <li>
-              <a
-                class="footer-link"
-                href={link.href}
-                target={link.external ? "_blank" : undefined}
-                rel={link.external ? "noopener noreferrer" : undefined}
-              >
-                {link.value}
-              </a>
-            </li>
-          ))
-        }
-      </ul>
-    </div>
-
     <div
-      class="col-span-full mt-8 flex items-center justify-between max-[640px]:flex-col max-[640px]:items-start max-[640px]:gap-3"
+      class="flex items-center justify-between max-[640px]:flex-col max-[640px]:items-start max-[640px]:gap-3"
     >
       <p class="m-0 font-mono text-xs text-muted-foreground">
         {site.copyright}
@@ -98,7 +28,7 @@ const githubRepoUrl = `https://github.com/${site.githubRepo}`
 
     <!-- 备案 / RSS / Sitemap / 开源 / 字数 / 驱动 / Cloudflare -->
     <div
-      class="col-span-full mt-8 flex flex-col items-center gap-3 text-center"
+      class="flex flex-col items-center gap-3 text-center"
     >
       <p
         class="m-0 font-mono text-xs leading-relaxed text-muted-foreground"

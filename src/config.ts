@@ -1,3 +1,102 @@
+// ==================== site / navigation / links ====================
+
+export const site = {
+  name: "Ad_closeNN 的小站",
+  shortName: "Ad_closeNN",
+  description: "Ad_closeNN 的小站，专注于技术分享和记录生活",
+  url: "https://blog.adclosenn.top",
+  locale: "zh_CN",
+  language: "zh-CN",
+  avatarSrc: "/images/avatar.jpg",
+  copyright: "© 2025-present Ad_closeNN.",
+  // owner/repo 格式，非完整 URL；使用处拼 https://github.com/${githubRepo}
+  githubRepo: "Ad-closeNN/blog-sc",
+} as const
+
+export const navigation = {
+  home: { label: "首页", href: "/" },
+  posts: { label: "文章", href: "/posts/" },
+  friends: { label: "友链", href: "/friends/" },
+} as const
+
+export const navigationItems = Object.values(navigation)
+
+export const links = {
+  me: {
+    label: "个人站",
+    value: "me.adclosenn.top",
+    href: "https://me.adclosenn.top",
+    external: true,
+  },
+  github: {
+    label: "GitHub",
+    value: "Ad-closeNN",
+    href: "https://github.com/Ad-closeNN",
+    external: true,
+  },
+  x: {
+    label: "X",
+    value: "Ad_closeNN",
+    href: "https://x.com/Ad_closeNN",
+    external: true,
+  },
+  email: {
+    label: "电子邮箱",
+    value: "adclosenn@qq.com",
+    href: "mailto:adclosenn@qq.com",
+    external: false,
+  },
+  rss: {
+    label: "RSS 订阅",
+    value: "/rss.xml",
+    href: "/rss.xml",
+    external: false,
+  },
+} as const
+
+// ==================== footer ====================
+
+/** Footer 底部 meta 块配置（备案号 / RSS / Sitemap / 开源 / 驱动 / Cloudflare） */
+export const footer = {
+  beian: {
+    tea: {
+      text: "茶ICP备2025080144号",
+      href: "https://icp.redcha.cn/beian/ICP-2025080144.html",
+    },
+    moe: {
+      text: "萌ICP备20256087号",
+      href: "https://icp.gov.moe/?keyword=20256087",
+    },
+  },
+  rssHref: "/rss.xml",
+  sitemapHref: "/sitemap-index.xml",
+  openSource: { text: "已开源" },
+  driver: {
+    astro: { text: "Astro", href: "https://astro.build" },
+  },
+  cloudflare: {
+    text: "经 Cloudflare 构建并部署至全球 Cloudflare CDN 节点",
+    href: "https://www.cloudflare.com",
+  },
+} as const
+
+// ==================== profile ====================
+
+/** 作者信息：侧栏迷你头像卡与友链页「本站友链信息」共用 */
+export const profile = {
+  avatar: "/images/avatar.jpg",
+  name: "Ad_closeNN",
+  bio: "永远相信美好的事情即将发生",
+  links: [
+    { name: "GitHub", href: "https://github.com/Ad-closeNN" },
+    { name: "X", href: "https://x.com/Ad_closeNN" },
+    { name: "Email", href: "mailto:adclosenn@qq.com" },
+    { name: "RSS", href: "/rss.xml" },
+  ],
+} as const
+
+// ==================== friends ====================
+
 export type Friend = {
   name: string
   url: string
@@ -192,4 +291,30 @@ export const friendsApply = {
   title: "将您的网站加入本站友链板块",
   description: "请自行提交 GitHub Issue",
   issueUrl: "https://github.com/Ad-closeNN/form/issues/new?template=friends-link.yml",
+} as const
+
+// ==================== ga ====================
+
+/**
+ * Google Analytics (GA4) 配置。
+ * 沿用旧 blog-fuwari 站的衡量 ID；enable:false 时不注入任何脚本。
+ */
+export const gaConfig = {
+  enable: true,
+  measurementId: "G-YRCGFG45C1",
+} as const
+
+// ==================== umami ====================
+
+/**
+ * Umami 站点统计配置。
+ * 当前沿用旧 blog-fuwari 站的 id（websiteId 埋点 / shareId 读统计），
+ * 因此统计到的是 fuwari 站的数据；待为 blog-sc 新建站点后替换这两个值。
+ */
+export const umamiConfig = {
+  enable: true,
+  baseUrl: "https://umami.adclosenn.top",
+  websiteId: "7610548d-677b-40cb-9ebd-31dc14e16be7",
+  shareId: "jME4HFb9JmfJM5zs",
+  timezone: "Asia/Shanghai",
 } as const
