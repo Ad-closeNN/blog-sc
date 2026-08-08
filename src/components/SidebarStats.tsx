@@ -95,7 +95,7 @@ export default function SidebarStats() {
   return (
     <section className="rounded-xl border border-border bg-card p-4">
       <h2 className="mb-3 flex items-center gap-2 font-mono text-[0.7rem] font-semibold tracking-[0.06em] text-muted-foreground uppercase">
-        动态 Dynamic
+        信息 Info
       </h2>
       <ul className="m-0 flex list-none flex-col gap-3 p-0">
         <li className="flex items-start gap-2 text-xs text-muted-foreground">

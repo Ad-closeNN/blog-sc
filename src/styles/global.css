@@ -1349,6 +1349,9 @@ main {
   border-radius: 10px;
   border: 1px solid var(--border);
   box-shadow: 0 24px 60px -20px oklch(0 0 0 / 35%);
+  /* 未放大时点击图片关闭灯箱，与遮罩一致用缩小放大镜；
+     放大后 .is-zoomed 覆盖为 grab/grabbing（拖拽平移） */
+  cursor: zoom-out;
   /* transform 由 JS 动画驱动，这里只声明合成层意图 */
   will-change: transform, opacity;
 }

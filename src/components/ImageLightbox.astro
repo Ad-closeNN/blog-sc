@@ -171,6 +171,8 @@
     let scrubStartX = 0
     let scrubStartScale = 1
     let scrubMoved = false
+    // 图片拖拽平移状态：幅度超阈值才算拖拽，避免拖一下手就误关灯箱
+    let dragMoved = false
 
     const reduceMotion = () =>
       window.matchMedia("(prefers-reduced-motion: reduce)").matches
@@ -367,6 +369,15 @@
         close()
         return
       }
+      // 点击图片关闭灯箱；刚拖拽平移过（dragMoved）则不关闭，重置待下次
+      if (target.closest("[data-lightbox-img]")) {
+        if (dragMoved) {
+          dragMoved = false
+          return
+        }
+        close()
+        return
+      }
       // 原图直连按钮：交给浏览器正常打开新标签
       if (target.closest("[data-lightbox-raw]")) return
 
@@ -463,6 +474,7 @@
       if (scale <= 1) return
       if (!target.closest("[data-lightbox-img]")) return
       event.preventDefault()
+      dragMoved = false
       dragging = true
       dragId = event.pointerId
       startX = event.clientX - tx
@@ -478,8 +490,13 @@
         return
       }
       if (!dragging || event.pointerId !== dragId) return
-      tx = event.clientX - startX
-      ty = event.clientY - startY
+      const dx = event.clientX - startX
+      const dy = event.clientY - startY
+      // 幅度小于阈值不算拖拽（纯点击），避免误触发 dragMoved
+      if (!dragMoved && Math.abs(dx) < 3 && Math.abs(dy) < 3) return
+      dragMoved = true
+      tx = dx
+      ty = dy
       applyTransform(false)
     })
 
