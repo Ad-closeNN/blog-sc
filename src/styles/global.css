@@ -713,32 +713,17 @@ main {
 
 .home-online-dot {
   position: absolute;
-  right: 8px;
-  bottom: 8px;
-  width: 14px;
-  height: 14px;
-  border: 2px solid var(--background);
+  right: 10px;
+  bottom: 10px;
+  width: 18px;
+  height: 18px;
   border-radius: 999px;
-  background: oklch(0.72 0.17 145);
-  box-shadow: 0 0 0 0 oklch(0.72 0.17 145 / 45%);
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .home-online-dot {
-    animation: home-online-pulse 2.4s ease-out infinite;
-  }
-}
-
-@keyframes home-online-pulse {
-  0% {
-    box-shadow: 0 0 0 0 oklch(0.72 0.17 145 / 45%);
-  }
-  70% {
-    box-shadow: 0 0 0 10px oklch(0.72 0.17 145 / 0%);
-  }
-  100% {
-    box-shadow: 0 0 0 0 oklch(0.72 0.17 145 / 0%);
-  }
+  background: #22c55e;
+  /* 与 me.adclosenn.top 一致：双环 box-shadow 描边
+     （kumo-canvas → --background，kumo-line → --border），无呼吸动画 */
+  box-shadow:
+    0 0 0 4px var(--background),
+    0 0 0 5px var(--border);
 }
 
 .eyebrow {
