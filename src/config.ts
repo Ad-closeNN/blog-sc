@@ -3,7 +3,7 @@
 export const site = {
   name: "Ad_closeNN 的小站",
   shortName: "Ad_closeNN",
-  description: "永远相信美好的事情即将发生",
+  description: "Ad_closeNN 的小站，专注于技术分享和记录生活",
   url: "https://blog.adclosenn.top",
   locale: "zh_CN",
   language: "zh-CN",
@@ -171,8 +171,8 @@ export const friends: Friend[] = [
   },
   // —— 朋友博客 ——
   {
-    name: "AcoFork Blog",
-    url: "https://blog.2x.nz",
+    name: "《二叉树树》官方网站",
+    url: "https://2x.nz",
     avatar: "https://q2.qlogo.cn/headimg_dl?dst_uin=2726730791&spec=0",
     description: "爱你所爱~ ❤",
     group: "朋友博客",
