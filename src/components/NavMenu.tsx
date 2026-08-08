@@ -1,6 +1,6 @@
 import { links, navigation } from "@/config"
 import { BookHeartIcon, GitBranchIcon, MoreVerticalIcon, RssIcon } from "lucide-react"
-import { Fragment } from "react"
+import { Fragment, useEffect, useRef } from "react"
 
 import {
   DropdownMenu,
@@ -46,10 +46,26 @@ const entries: MenuEntry[] = [
 /**
  * 导航下拉菜单：友链 / RSS / GitHub。
  * 放在桌面端 SearchBox 与 ThemeToggle 之间。
+ *
+ * transition:persist 下切页（如点友链跳到 /friends/）island 保留 React 状态，
+ * 但 base-ui Menu 的 portal 容器只解析一次、切页后仍指向旧 body，
+ * open/mounted 状态机失步 → 需连点 3 次才重建。故在 astro:page-load
+ * 时用 actionsRef.close()+unmount() 强制复位（与 SearchBox 的强关范式一致）。
  */
 export default function NavMenu() {
+  const menuActionsRef = useRef<{ close: () => void; unmount: () => void }>(null)
+
+  useEffect(() => {
+    const reset = () => {
+      menuActionsRef.current?.close()
+      menuActionsRef.current?.unmount()
+    }
+    document.addEventListener("astro:page-load", reset)
+    return () => document.removeEventListener("astro:page-load", reset)
+  }, [])
+
   return (
-    <DropdownMenu>
+    <DropdownMenu actionsRef={menuActionsRef}>
       <DropdownMenuTrigger
         render={
           <Button
