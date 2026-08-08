@@ -128,7 +128,7 @@ export const friends: Friend[] = [
   {
     name: "Google Gemini",
     url: "https://gemini.google.com",
-    avatar: "https://www.google.com/favicon.ico",
+    avatar: "https://www.gstatic.com/lamda/images/gemini_sparkle_aurora_33f86dc0c0257da337c63.svg",
     description: "这是真好用",
     group: "站点伙伴",
   },

@@ -657,7 +657,16 @@ html.is-route-loaded .route-progress {
 .site-navbar.is-title-gone .site-navbar-current-title {
   opacity: 1;
   transform: translateX(0); /* 从右滑入归位 */
-  pointer-events: auto; /* 显示时可横向滚动查看超长标题 */
+  pointer-events: auto; /* 显示时可横向滚动查看超长标题、点击返回顶部 */
+  cursor: pointer; /* 可点击返回顶部的视觉提示 */
+  transition:
+    opacity 220ms ease,
+    transform 220ms ease,
+    color 160ms ease; /* 叠加颜色过渡 */
+}
+
+.site-navbar.is-title-gone .site-navbar-current-title:hover {
+  color: var(--muted-foreground); /* hover 变色：暗示可点击返回顶部 */
 }
 
 .site-navbar-navlink {

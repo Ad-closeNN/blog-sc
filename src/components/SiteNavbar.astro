@@ -94,6 +94,7 @@ if (!isHome) {
                       <span
                         class="site-navbar-current-title"
                         aria-hidden="true"
+                        onclick="const r=window.matchMedia('(prefers-reduced-motion: reduce)').matches;window.scrollTo({top:0,behavior:r?'auto':'smooth'})"
                       >
                         {navbarSwapTitle}
                       </span>
