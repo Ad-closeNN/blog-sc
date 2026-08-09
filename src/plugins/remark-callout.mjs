@@ -88,7 +88,7 @@ function rawSlice(source, node) {
 let githubCardSeq = 0
 
 /**
- * 生成 fuwari 同款 GitHub 仓库卡片的原始 HTML（含前端 fetch 脚本）。
+ * 生成 GitHub 仓库卡片的原始 HTML（含前端 fetch 脚本）。
  * @param {string} repo - "owner/repo" 格式仓库名
  * @returns {string}
  */
@@ -96,7 +96,7 @@ function githubCardHtml(repo) {
   const uuid = `gc${(githubCardSeq++).toString(36)}${Date.now().toString(36).slice(-4)}`
   const owner = repo.split("/")[0] ?? ""
   const cardHref = `https://github.com/${repo}`
-  // 来自 fuwari rehype-component-github-card.mjs 的结构与内联脚本
+  // GitHub 仓库卡片的结构与内联脚本
   return [
     `<a id="${uuid}-card" class="card-github fetch-waiting" href="${cardHref}" target="_blank" rel="noopener noreferrer">`,
     `  <div class="gc-titlebar">`,

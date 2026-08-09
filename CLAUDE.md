@@ -75,3 +75,33 @@ Typical page pattern: frontmatter imports `Layout` + React components → `<Layo
 - New shadcn pieces go through the CLI so they match `components.json` aliases and `base-nova`.
 - Keep layouts thin (HTML shell + global CSS); put page content in `pages/` and interactive pieces in React components.
 - `pnpm-workspace.yaml` exists with empty `packages`; treat this as a single-package app unless a workspace package is added later.
+
+## Gotchas & Notes
+
+### Expressive Code（代码块）
+
+- 代码块用 **`astro-expressive-code`**（替代 Astro 内置 shiki），`astro.config.mjs` 里配置了 line-numbers / collapsible-sections 插件、zh-CN locale、github-dark 主题。
+- **`rehype-expressive-code` 必须放在 `markdown.processor` 的 `rehypePlugins` 首位**：`rehype-raw` 会重解析 `<pre>/<code>` 并剥离 code 节点的 `metastring`，导致行高亮（`{1-3}`）、新增/删除行（`ins=`/`del=`）、折叠（`collapse=`）、标题（`title=`）全部失效。EC 的 integration 会再 push 一份到末尾，遇到已渲染的 frame 会幂等跳过，无需担心重复。
+- `astro.config.mjs` 里有两处 EC 配置（integration + 手动 rehype 那份），**改 styleOverrides / 插件 / locale 必须两处同步**。
+- 代码字体统一 `var(--font-mono)`（Cascadia Mono），frame 无阴影，激活 tab 橙色指示线在底部（`editorActiveTabIndicatorBottomColor: "#f9826c"`，顶部禁用）。
+- 文章里已有大量 EC 语法代码块，改动代码块渲染务必实机抽查 `custom-frontmatter.md` / `giscus.md` / `kugou-music-download.md`（含行高亮 / ins / collapse）。
+
+### 图片灯箱（`src/components/ImageLightbox.astro`）
+
+- 点击图片区域也关闭灯箱（与遮罩一致），带 `dragMoved` 阈值（3px）区分「拖拽平移」与「点击关闭」。
+- 手机端双指捏合缩放用**精确锚点**算法（捏合起点中点下的图像点全程保持在新中点下），不走滚轮的 `runZoomLoop`（要即时跟手）。
+- `.lightbox` 和 `.lightbox-img` 必须有 `touch-action: none`，否则手机浏览器默认整页缩放会劫持双指捏合。**不要加 `user-scalable=no`**（iOS 强制忽略且伤害无障碍）。
+
+### 统计（umami / GA）
+
+- `src/config.ts` 里 `umamiConfig` / `gaConfig` 的 id（`7610548d-...`、`G-YRCGFG45C1`）**待用户为 blog-sc 新建站点后替换**。
+- `window.__blogUmami` store 注入在 `BaseLayout.astro`（`is:inline define:vars`），必须用 `define:vars` 传 `umamiConfig`——`is:inline` 不做插值，直接写 `umamiConfig.xxx` 会运行时 `ReferenceError`。
+- 移除过 store 的结果值缓存：`window.__blogUmami` 跨 View Transitions 存活，若缓存结果值切页回来会显示旧浏览量。
+- View Transitions 下 GA 用 `send_page_view: false` + `astro:page-load` 手动上报，切页不漏报。
+
+### 其他
+
+- 搜索代码用 `rg` 而非 `grep`。
+- 配置集中在 `src/config.ts` 单文件（site/navigation/links/footer/profile/friends/ga/umami），不要拆成目录。
+- 热力图模块已删除（`PostHeatmap.astro` / `heatmap-core.ts` 均移除），不要再引用。
+- 侧栏「信息」卡（`SidebarStats.tsx`）：一言 API / Umami 全站访问量 / GitHub 最新 commit（`site.githubRepo` 是私有仓库时 commit 显示「提交信息不可用」，属正常降级）。

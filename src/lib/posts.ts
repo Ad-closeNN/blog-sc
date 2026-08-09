@@ -128,8 +128,7 @@ export function getTaxonomies(posts: Post[]) {
 /**
  * 全站字数统计。
  * 从 post.body（glob loader 提供的原始 markdown 源）计数，CJK 逐字 + 拉丁逐词。
- * blog-sc 无 remark 字数插件（fuwari 的 remarkPluginFrontmatter.words 不可用），
- * 故从 markdown 源剥离语法后直接数。
+ * 无 remark 字数插件，故从 markdown 源剥离语法后直接数。
  */
 export function countWordsInMarkdown(md: string): number {
   const text = md

@@ -106,8 +106,7 @@ export type Friend = {
 }
 
 /**
- * 友链数据（迁移自旧 blog-fuwari 站 friends.astro）。
- * fuwari 里失效的本地头像 /assets/... 已替换为对应站点 favicon 或 GitHub favicon。
+ * 友链数据。失效的本地头像 /assets/... 已替换为对应站点 favicon 或 GitHub favicon。
  */
 export const friends: Friend[] = [
   // —— 站点伙伴 ——
@@ -297,7 +296,7 @@ export const friendsApply = {
 
 /**
  * Google Analytics (GA4) 配置。
- * 沿用旧 blog-fuwari 站的衡量 ID；enable:false 时不注入任何脚本。
+ * enable:false 时不注入任何脚本。
  */
 export const gaConfig = {
   enable: true,
@@ -308,8 +307,7 @@ export const gaConfig = {
 
 /**
  * Umami 站点统计配置。
- * 当前沿用旧 blog-fuwari 站的 id（websiteId 埋点 / shareId 读统计），
- * 因此统计到的是 fuwari 站的数据；待为 blog-sc 新建站点后替换这两个值。
+ * 当前 id（websiteId 埋点 / shareId 读统计）待为 blog-sc 新建站点后替换。
  */
 export const umamiConfig = {
   enable: true,

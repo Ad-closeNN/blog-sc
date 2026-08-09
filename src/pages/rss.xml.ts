@@ -8,8 +8,8 @@ import { getPostCover, getPosts, postHref } from "@/lib/posts"
 /**
  * RSS 全文订阅源端点，输出 /rss.xml。
  *
- * 构建时（SSG）与 dev（live SSR）都会执行。URL 与旧 Fuwari 站保持一致，
- * guid 逐条对齐，老订阅者迁移后不会看到重复条目。
+ * 构建时（SSG）与 dev（live SSR）都会执行。URL 路径保持稳定，
+ * guid 逐条对齐，订阅者迁移后不会看到重复条目。
  *
  * 正文直接复用 post.rendered.html —— 内容层已跑完项目的完整 markdown 管线
  * （remarkCallout / rehypeRaw / 外链 _blank / h1 降级 / shiki），feed 正文
