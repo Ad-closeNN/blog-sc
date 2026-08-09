@@ -159,7 +159,7 @@
   /* 代码块选中：代码块恒为 github-dark 深底（#24292e），独立于站点主题，
      故用半透明白高亮（深底上清晰且不刺眼），与浅色模式全局近黑选中区分开——
      否则浅色下选中叠深底几乎不可见。color:inherit 保留代码原文字色。 */
-  .astro-code ::selection {
+  .expressive-code ::selection {
     background: rgba(255, 255, 255, 0.35);
     color: inherit;
   }
@@ -1171,6 +1171,31 @@ main {
   font-size: 0.875rem;
   line-height: 1.65;
   white-space: pre;
+}
+
+/* Expressive Code 代码块：适配站点风格（圆角/边框/字体与 .prose pre 对齐）。
+   EC 生成 .expressive-code > figure.frame 结构，自带主题默认样式，
+   此处覆盖为与站点一致；EC 内部 .frame pre 背景由 EC 主题接管（github-dark 深底）。 */
+.prose .expressive-code {
+  margin: 1.25em 0;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.875rem;
+}
+
+.prose .expressive-code .frame {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.prose .expressive-code .frame pre {
+  margin: 0;
+  border-radius: 0;
+}
+
+.prose .expressive-code .header {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.75rem;
 }
 
 .prose blockquote {
