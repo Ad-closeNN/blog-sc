@@ -1324,6 +1324,8 @@ main {
   padding: clamp(1rem, 4vw, 3rem);
   opacity: 0;
   transition: opacity 180ms ease;
+  /* 灯箱打开期间接管全部触摸手势，阻止手机浏览器整页缩放劫持双指捏合 */
+  touch-action: none;
 }
 
 .lightbox.is-open {
@@ -1352,6 +1354,8 @@ main {
   /* 未放大时点击图片关闭灯箱，与遮罩一致用缩小放大镜；
      放大后 .is-zoomed 覆盖为 grab/grabbing（拖拽平移） */
   cursor: zoom-out;
+  /* 双指捏合时阻止浏览器默认整页缩放接管（关键）；单指 tap 不受影响 */
+  touch-action: none;
   /* transform 由 JS 动画驱动，这里只声明合成层意图 */
   will-change: transform, opacity;
 }

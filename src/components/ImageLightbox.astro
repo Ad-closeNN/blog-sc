@@ -174,6 +174,17 @@
     // 图片拖拽平移状态：幅度超阈值才算拖拽，避免拖一下手就误关灯箱
     let dragMoved = false
 
+    // —— 双指捏合跟踪（手机端）——
+    // 当前活跃指针：pointerId → 屏幕坐标（最多跟踪两指，多余忽略）
+    let pointers = new Map<number, { x: number; y: number }>()
+    let pinchMode = false
+    let pinchStartDist = 0
+    let pinchStartScale = 1
+    let pinchStartMidX = 0
+    let pinchStartMidY = 0
+    let pinchStartTx = 0
+    let pinchStartTy = 0
+
     const reduceMotion = () =>
       window.matchMedia("(prefers-reduced-motion: reduce)").matches
 
@@ -273,6 +284,63 @@
       runZoomLoop()
     }
 
+    /** 进入双指捏合：记录起始间距/中点/scale/平移作为锚点基准 */
+    function beginPinch() {
+      const pts = [...pointers.values()]
+      if (pts.length < 2) return
+      pinchMode = true
+      dragging = false
+      dragMoved = true // 捏合绝不触发「点击关闭」
+      pinchStartDist = Math.hypot(
+        pts[0].x - pts[1].x,
+        pts[0].y - pts[1].y
+      )
+      pinchStartScale = scale
+      pinchStartMidX = (pts[0].x + pts[1].x) / 2
+      pinchStartMidY = (pts[0].y + pts[1].y) / 2
+      pinchStartTx = tx
+      pinchStartTy = ty
+    }
+
+    /**
+     * 双指捏合跟手更新：让「捏合起点中点下的图像点」全程保持在当前
+     * 两指中点下方（精确锚点），缩放中心跟随中点、平移跟随中点移动。
+     * 直接 applyTransform(false)，不走 runZoomLoop（捏合要即时跟手）。
+     */
+    function updatePinch() {
+      const pts = [...pointers.values()]
+      if (pts.length < 2 || pinchStartDist === 0) return
+      const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y)
+      if (dist === 0) return // 瞬时两指重叠帧，防除零
+      const midX = (pts[0].x + pts[1].x) / 2
+      const midY = (pts[0].y + pts[1].y) / 2
+      const nextScale = clamp(
+        pinchStartScale * (dist / pinchStartDist),
+        MIN_SCALE,
+        MAX_SCALE
+      )
+      const ratio = nextScale / pinchStartScale
+      const cx = window.innerWidth / 2
+      const cy = window.innerHeight / 2
+      scale = Number(nextScale.toFixed(3))
+      targetScale = scale // 同步滚轮基线，避免捏合后滚轮跳变
+      tx = Number(
+        (
+          pinchStartTx * ratio +
+          (midX - cx) -
+          (pinchStartMidX - cx) * ratio
+        ).toFixed(2)
+      )
+      ty = Number(
+        (
+          pinchStartTy * ratio +
+          (midY - cy) -
+          (pinchStartMidY - cy) * ratio
+        ).toFixed(2)
+      )
+      applyTransform(false)
+    }
+
     /**
      * 从缩略图位置 FLIP 到最终居中位置，做平滑放大。
      * 注意：动画期间不要写 inline transform（applyTransform 会覆盖动画），
@@ -320,6 +388,12 @@
       targetScale = 1
       tx = 0
       ty = 0
+      // 清空指针/拖拽/捏合残留状态
+      pointers.clear()
+      pinchMode = false
+      dragging = false
+      dragId = null
+      dragMoved = false
       applyTransform(false)
       // 触发 reflow，让 is-open 的淡入过渡生效
       void root.offsetWidth
@@ -337,6 +411,12 @@
       if (!isOpen) return
       isOpen = false
       cancelZoomLoop()
+      // 清空指针/拖拽/捏合残留状态
+      pointers.clear()
+      pinchMode = false
+      dragging = false
+      dragId = null
+      dragMoved = false
 
       const found = els()
       if (!found) {
@@ -470,15 +550,23 @@
         return
       }
 
-      // 放大后拖拽平移图片
-      if (scale <= 1) return
+      // 图片上的触摸：登记指针，再按单指/双指分流（支持手机端捏合）
       if (!target.closest("[data-lightbox-img]")) return
       event.preventDefault()
-      dragMoved = false
-      dragging = true
-      dragId = event.pointerId
-      startX = event.clientX - tx
-      startY = event.clientY - ty
+
+      pointers.set(event.pointerId, { x: event.clientX, y: event.clientY })
+
+      if (pointers.size === 1) {
+        // 第一根手指：登记单指拖拽基线（scale≤1 时单指只是「点击关闭」，不拖拽）
+        dragId = event.pointerId
+        startX = event.clientX - tx
+        startY = event.clientY - ty
+        dragMoved = false
+        dragging = scale > 1
+      } else if (pointers.size === 2) {
+        // 第二根手指落下 → 进入双指捏合
+        beginPinch()
+      }
     })
 
     document.addEventListener("pointermove", (event) => {
@@ -489,6 +577,18 @@
         setScale(scrubStartScale + dx * SCRUB_PER_PX, false)
         return
       }
+
+      // 先更新被跟踪指针的最新位置
+      if (pointers.has(event.pointerId)) {
+        pointers.set(event.pointerId, { x: event.clientX, y: event.clientY })
+      }
+
+      // 双指捏合中：跟手缩放 + 平移
+      if (pinchMode && pointers.size >= 2) {
+        updatePinch()
+        return
+      }
+
       if (!dragging || event.pointerId !== dragId) return
       const dx = event.clientX - startX
       const dy = event.clientY - startY
@@ -510,9 +610,33 @@
         // scrubMoved 留给随后的 click 判断是否跳过复位
         return
       }
-      if (event.pointerId !== dragId) return
-      dragging = false
-      dragId = null
+
+      if (!pointers.has(event.pointerId)) return
+      pointers.delete(event.pointerId)
+
+      if (pinchMode) {
+        if (pointers.size === 1) {
+          // 双指抬一根 → 用剩余指针重建单指拖拽基线，跟手过渡
+          pinchMode = false
+          const [pid, pt] = [...pointers.entries()][0]
+          dragId = pid
+          dragging = scale > 1
+          startX = pt.x - tx
+          startY = pt.y - ty
+          dragMoved = true
+        } else {
+          // 全抬 → 结束捏合
+          pinchMode = false
+          dragging = false
+          dragId = null
+        }
+        return
+      }
+
+      if (event.pointerId === dragId) {
+        dragging = false
+        dragId = null
+      }
     }
     document.addEventListener("pointerup", endDrag)
     document.addEventListener("pointercancel", endDrag)
