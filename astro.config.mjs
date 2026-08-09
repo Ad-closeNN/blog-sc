@@ -96,5 +96,9 @@ export default defineConfig({
   },
   vite: {
     plugins: [tailwindcss()],
+    server: {
+      // 允许通过任意外部预览域名访问 dev server
+      allowedHosts: true,
+    },
   },
 })
