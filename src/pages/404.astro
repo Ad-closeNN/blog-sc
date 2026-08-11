@@ -1,0 +1,60 @@
+---
+import { buttonVariants } from "@/components/ui/button"
+import { navigation } from "@/config"
+import BaseLayout from "@/layouts/BaseLayout.astro"
+import { cn } from "@/lib/utils"
+---
+
+<BaseLayout
+  title="页面不存在"
+  description="找不到请求的页面。"
+  noindex
+  showFooter={false}
+  mainClass="not-found-page"
+>
+  <section class="not-found" aria-labelledby="not-found-title">
+    <div class="route-mark" aria-hidden="true">
+      <span class="route-chip"><span class="route-chip-dot"></span>route missing</span>
+      <span class="route-line"></span>
+    </div>
+
+    <div class="content">
+      <p class="not-found-eyebrow">404 · page not found</p>
+      <h1 id="not-found-title" class="not-found-title">Woops!</h1>
+      <p class="summary">
+        我们找不到您要访问的页面
+        <span id="missing-path" class="missing-path">/</span>
+      </p>
+      <div class="not-found-actions" aria-label="可选操作">
+        <a
+          href={navigation.home.href}
+          class={cn(buttonVariants({ size: "lg" }), "w-full sm:w-auto")}
+        >
+          回到首页
+        </a>
+        <a
+          href={navigation.posts.href}
+          class={cn(
+            buttonVariants({ variant: "secondary", size: "lg" }),
+            "w-full sm:w-auto"
+          )}
+        >
+          {navigation.posts.label}
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <script is:inline>
+    const installKey = "__notFoundPathInstalled"
+    if (!window[installKey]) {
+      window[installKey] = true
+      const fill = () => {
+        const el = document.getElementById("missing-path")
+        if (el) el.textContent = window.location.pathname
+      }
+      document.addEventListener("astro:page-load", fill)
+      fill()
+    }
+  </script>
+</BaseLayout>
