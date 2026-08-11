@@ -49,6 +49,9 @@ export default function MobileNavMenu({ pathname, headings = [] }: Props) {
   const [open, setOpen] = useState(false)
   const [prevPathname, setPrevPathname] = useState(pathname)
   const [activeId, setActiveId] = useState("")
+  const sheetActionsRef = useRef<{ close: () => void; unmount: () => void }>(
+    null,
+  )
   const isClickScrollingRef = useRef(false)
   const lockTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const scrollAfterCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
@@ -63,6 +66,23 @@ export default function MobileNavMenu({ pathname, headings = [] }: Props) {
     setPrevPathname(pathname)
     setOpen(false)
   }
+
+  /*
+   * transition:persist 下切页时 island 被保留，但 base-ui Dialog 的 portal 容器
+   * 只解析一次、切页后仍指向被 View Transitions 换掉的旧 body，open/mounted 状态机
+   * 失步 → 点按钮时抽屉挂不上来（表现为「点不开」，需连点多次）。
+   * 故在 astro:page-load 时用 actionsRef.close()+unmount() 强制复位。
+   * 上方按 pathname 的 setOpen(false) 只负责 React 侧状态，二者互补。
+   * 同一问题与修法见 NavMenu.tsx（桌面端下拉菜单）。
+   */
+  useEffect(() => {
+    const reset = () => {
+      sheetActionsRef.current?.close()
+      sheetActionsRef.current?.unmount()
+    }
+    document.addEventListener("astro:page-load", reset)
+    return () => document.removeEventListener("astro:page-load", reset)
+  }, [])
 
   const isDark = useSyncExternalStore(
     themeStore.subscribe,
@@ -174,7 +194,7 @@ export default function MobileNavMenu({ pathname, headings = [] }: Props) {
         <MenuIcon />
       </Button>
 
-      <Sheet open={open} onOpenChange={setOpen}>
+      <Sheet open={open} onOpenChange={setOpen} actionsRef={sheetActionsRef}>
         <SheetContent
           side="right"
           className="flex w-80 max-w-[85vw] flex-col gap-0 p-0"

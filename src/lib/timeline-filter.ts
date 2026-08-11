@@ -144,7 +144,10 @@ export function initTimelineFilter({
     const current = activeFilters.get(paramKey)
     if (current) url.searchParams.set(paramKey, current)
     else url.searchParams.delete(paramKey)
-    history.replaceState(null, "", url)
+    // 保留 history.state（Astro View Transitions 存导航恢复信息于此）。
+    // 若传 null：在文章页加载窗口内点筛选会把该记录的 state 破坏为 null，
+    // 返回时 Astro 无法恢复过渡状态 → URL 是列表页但渲染的是文章页内容。
+    history.replaceState(history.state, "", url)
 
     const isAll = activeFilters.size === 0
     // 筛选时展开折叠区，让全部文章可被过滤
