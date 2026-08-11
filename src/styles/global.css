@@ -800,6 +800,47 @@ main {
   color: var(--foreground);
 }
 
+/*
+ * Footer meta 行（备案行 / 字数行）的换行控制。
+ * 桌面：保持纯 inline 文本流，分隔符左右 0.5rem，视觉与改造前一致。
+ * 手机（≤640px）：换成 flex + wrap，让 .footer-meta-item（如「RSS / Sitemap」
+ * 「博客代码已开源」「由 Astro 驱动」）成为不可拆分的整体，整段按语义片段
+ * 分行而不是从中文中间硬断——341px 满宽单行是拥挤的根因，text-balance 对
+ * 「刚好放得下一行」的情况不生效，故改用 flex 换行。
+ */
+.footer-meta-sep {
+  margin-inline: 0.5rem;
+}
+
+.footer-meta-item {
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .footer-meta-line {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0.15rem 0;
+  }
+
+  /* flex 下 gap 已提供间距，分隔符收窄左右外边距避免过散 */
+  .footer-meta-sep {
+    margin-inline: 0.4rem;
+  }
+
+  /*
+   * 未包在 .footer-meta-item 里的长链接（Cloudflare 那条 39 字的说明）
+   * 作为单个 flex item 时，min-width:auto 会让它拒绝收缩、在 320px 级
+   * 窄屏撑破容器（实测 334px > 296px 容器）。放开收缩并允许内部断行。
+   */
+  .footer-meta-line > .footer-meta-link {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+}
+
 .back-link {
   display: inline-flex;
   align-items: center;

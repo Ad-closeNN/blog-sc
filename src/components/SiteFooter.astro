@@ -28,10 +28,10 @@ const githubRepoUrl = `https://github.com/${site.githubRepo}`
 
     <!-- 备案 / RSS / Sitemap / 开源 / 字数 / 驱动 / Cloudflare -->
     <div
-      class="flex flex-col items-center gap-3 text-center"
+      class="flex flex-col items-center gap-3 text-center max-[640px]:gap-4"
     >
       <p
-        class="m-0 font-mono text-xs leading-relaxed text-muted-foreground"
+        class="footer-meta-line m-0 font-mono text-xs leading-relaxed text-muted-foreground"
       >
         <a
           class="footer-meta-link"
@@ -40,7 +40,7 @@ const githubRepoUrl = `https://github.com/${site.githubRepo}`
           rel="noopener noreferrer"
           >{footer.beian.tea.text}</a
         >
-        <span class="mx-2" aria-hidden="true">·</span>
+        <span class="footer-meta-sep" aria-hidden="true">·</span>
         <a
           class="footer-meta-link"
           href={footer.beian.moe.href}
@@ -48,40 +48,44 @@ const githubRepoUrl = `https://github.com/${site.githubRepo}`
           rel="noopener noreferrer"
           >{footer.beian.moe.text}</a
         >
-        <span class="mx-2" aria-hidden="true">·</span>
-        <a class="footer-meta-link" href={footer.rssHref}>RSS</a>
-        <span class="mx-2" aria-hidden="true">/</span>
-        <a
-          class="footer-meta-link"
-          href={footer.sitemapHref}
-          target="_blank"
-          rel="noopener noreferrer"
-          >Sitemap</a
-        >
-        <span class="mx-2" aria-hidden="true">·</span>
-        博客代码
-        <a
-          class="footer-meta-link"
-          href={githubRepoUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          >{footer.openSource.text}</a
-        >
+        <span class="footer-meta-sep" aria-hidden="true">·</span>
+        <span class="footer-meta-item">
+          <a class="footer-meta-link" href={footer.rssHref}>RSS</a>
+          <span class="mx-1" aria-hidden="true">/</span>
+          <a
+            class="footer-meta-link"
+            href={footer.sitemapHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            >Sitemap</a
+          >
+        </span>
+        <span class="footer-meta-sep" aria-hidden="true">·</span>
+        <span class="footer-meta-item">
+          博客代码<a
+            class="footer-meta-link"
+            href={githubRepoUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            >{footer.openSource.text}</a
+          >
+        </span>
       </p>
       <p
-        class="m-0 font-mono text-xs leading-relaxed text-muted-foreground"
+        class="footer-meta-line m-0 font-mono text-xs leading-relaxed text-muted-foreground"
       >
-        总计 {formattedTotalWords} 字
-        <span class="mx-2" aria-hidden="true">·</span>
-        由
-        <a
-          class="footer-meta-link"
-          href={footer.driver.astro.href}
-          target="_blank"
-          rel="noopener noreferrer"
-          > {footer.driver.astro.text} </a
-        >驱动
-        <span class="mx-2" aria-hidden="true">·</span>
+        <span class="footer-meta-item">总计 {formattedTotalWords} 字</span>
+        <span class="footer-meta-sep" aria-hidden="true">·</span>
+        <span class="footer-meta-item"
+          >由<a
+            class="footer-meta-link"
+            href={footer.driver.astro.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            > {footer.driver.astro.text} </a
+          >驱动</span
+        >
+        <span class="footer-meta-sep" aria-hidden="true">·</span>
         <a
           class="footer-meta-link"
           href={footer.cloudflare.href}
