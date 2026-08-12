@@ -445,7 +445,13 @@ html.is-route-loaded .route-progress {
 .site-navbar.is-scrolled {
   background: color-mix(in oklch, var(--background) 82%, transparent);
   backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
+}
+
+/* 与标准声明隔离，避免生产压缩时合并去重 */
+@supports (-webkit-backdrop-filter: blur(0)) {
+  .site-navbar.is-scrolled {
+    -webkit-backdrop-filter: blur(18px);
+  }
 }
 
 /* IntersectionObserver 哨兵：零高度、不可见，仅用于滚动态判定 */
