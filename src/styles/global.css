@@ -289,8 +289,10 @@ body {
   height: 100%;
   overflow: hidden;
   background: color-mix(in oklch, var(--muted-foreground) 10%, transparent);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  /* var() 包装避免 lightningcss 合并去重 backdrop-filter 与 -webkit- 前缀 */
+  --progress-backdrop: blur(12px);
+  -webkit-backdrop-filter: var(--progress-backdrop);
+  backdrop-filter: var(--progress-backdrop);
 }
 
 .route-progress-bar {
@@ -1408,8 +1410,10 @@ main {
   position: absolute;
   inset: 0;
   background: color-mix(in oklch, var(--background) 82%, transparent);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  /* var() 包装避免 lightningcss 合并去重 backdrop-filter 与 -webkit- 前缀 */
+  --lightbox-backdrop: blur(16px);
+  -webkit-backdrop-filter: var(--lightbox-backdrop);
+  backdrop-filter: var(--lightbox-backdrop);
   cursor: zoom-out;
 }
 
@@ -1451,8 +1455,10 @@ main {
   border-radius: 9999px;
   border: 1px solid var(--border);
   background: color-mix(in oklch, var(--card) 88%, transparent);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  /* var() 包装避免 lightningcss 合并去重 backdrop-filter 与 -webkit- 前缀 */
+  --lightbox-btn-backdrop: blur(8px);
+  -webkit-backdrop-filter: var(--lightbox-btn-backdrop);
+  backdrop-filter: var(--lightbox-btn-backdrop);
   color: var(--foreground);
   text-decoration: none;
   cursor: pointer;

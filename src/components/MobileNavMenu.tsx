@@ -69,19 +69,18 @@ export default function MobileNavMenu({ pathname, headings = [] }: Props) {
 
   /*
    * transition:persist 下切页时 island 被保留，但 base-ui Dialog 的 portal 容器
-   * 只解析一次、切页后仍指向被 View Transitions 换掉的旧 body，open/mounted 状态机
-   * 失步 → 点按钮时抽屉挂不上来（表现为「点不开」，需连点多次）。
-   * 故在 astro:page-load 时用 actionsRef.close()+unmount() 强制复位。
-   * 上方按 pathname 的 setOpen(false) 只负责 React 侧状态，二者互补。
-   * 同一问题与修法见 NavMenu.tsx（桌面端下拉菜单）。
+   * 只解析一次、切页后仍可能指向被 View Transitions 换掉的旧 body，open/mounted
+   * 状态机失步后会留下透明但仍可交互的 overlay。交换 body 前同步关闭受控状态，
+   * 并强制卸载 portal，避免退出动画被页面切换打断。
    */
   useEffect(() => {
     const reset = () => {
+      setOpen(false)
       sheetActionsRef.current?.close()
       sheetActionsRef.current?.unmount()
     }
-    document.addEventListener("astro:page-load", reset)
-    return () => document.removeEventListener("astro:page-load", reset)
+    document.addEventListener("astro:before-swap", reset)
+    return () => document.removeEventListener("astro:before-swap", reset)
   }, [])
 
   const isDark = useSyncExternalStore(
@@ -194,7 +193,12 @@ export default function MobileNavMenu({ pathname, headings = [] }: Props) {
         <MenuIcon />
       </Button>
 
-      <Sheet open={open} onOpenChange={setOpen} actionsRef={sheetActionsRef}>
+      <Sheet
+        key={pathname}
+        open={open}
+        onOpenChange={setOpen}
+        actionsRef={sheetActionsRef}
+      >
         <SheetContent
           side="right"
           className="flex w-80 max-w-[85vw] flex-col gap-0 p-0"
@@ -249,7 +253,9 @@ export default function MobileNavMenu({ pathname, headings = [] }: Props) {
                 type="button"
                 variant="outline"
                 className="h-9 w-full justify-between"
-                onClick={() => themeStore.toggleDark()}
+                onClick={() =>
+                  themeStore.toggleDark({ viewTransition: false })
+                }
                 aria-label={isDark ? "切换到浅色模式" : "切换到深色模式"}
               >
                 <span className="flex items-center gap-3">

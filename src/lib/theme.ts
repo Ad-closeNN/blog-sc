@@ -36,47 +36,52 @@ function getServerSnapshot() {
  *   每帧额外 recalc+paint，crossfade 期间持续掉帧。
  *   finished 后真实 DOM 已完全显露、颜色已到位，移除 class 不触发新过渡，
  *   hover 动画随即恢复。
- * - token 守卫：连续快速切换时，前一次 VT 的 finished 可能在新 VT 开始
- *   后才 resolve；用递增 token 比对，仅当前次序的 VT 才允许移除 class，
- *   防止后启动的 VT 把 class 提前移除。
+ * - token 守卫：连续快速切换时，前一次清理可能在新一次切换开始后执行；
+ *   用递增 token 比对，仅最新一次主题变更才允许移除 class。
  *
- * 降级：不支持 startViewTransition 或 prefers-reduced-motion 时，直接 apply()
- * 瞬时切换（apply 内仍禁用 + 用 finished-less 的双帧 rAF 恢复，避免常驻
- * transition 在瞬时路径里产生半截动画）。
+ * 降级：显式禁用 View Transition、不支持 startViewTransition 或
+ * prefers-reduced-motion 时，直接 apply() 瞬时切换（apply 内仍禁用 + 用
+ * finished-less 的双帧 rAF 恢复，避免常驻 transition 产生半截动画）。
  */
-let themeVtToken = 0
+type ThemeChangeOptions = {
+  viewTransition?: boolean
+}
 
-function setDark(next: boolean) {
+let themeChangeToken = 0
+
+function setDark(next: boolean, options: ThemeChangeOptions = {}) {
   const root = document.documentElement
+  const token = ++themeChangeToken
   const apply = () => {
     root.classList.add("no-theme-transition")
     root.classList.toggle("dark", next)
     localStorage.setItem("theme", next ? "dark" : "light")
     listeners.forEach((listener) => listener())
   }
+  const cleanup = () => {
+    if (token === themeChangeToken) {
+      root.classList.remove("no-theme-transition")
+    }
+  }
+
   if (
+    options.viewTransition === false ||
     !document.startViewTransition ||
     window.matchMedia("(prefers-reduced-motion: reduce)").matches
   ) {
     apply()
     requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        root.classList.remove("no-theme-transition")
-      })
+      requestAnimationFrame(cleanup)
     })
     return
   }
-  const token = ++themeVtToken
+
   const vt = document.startViewTransition(apply)
-  vt.finished.finally(() => {
-    if (token === themeVtToken) {
-      root.classList.remove("no-theme-transition")
-    }
-  })
+  vt.finished.finally(cleanup)
 }
 
-function toggleDark() {
-  setDark(!getSnapshot())
+function toggleDark(options?: ThemeChangeOptions) {
+  setDark(!getSnapshot(), options)
 }
 
 export const themeStore = {
