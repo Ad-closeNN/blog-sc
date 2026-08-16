@@ -24,8 +24,8 @@ pnpm-debug.log*
 # Playwright MCP 临时产物（截图/快照/控制台日志）
 .playwright-mcp/
 
-# 本地调试截图与页面快照
-*.png
+# 本地调试截图与页面快照（仅根目录，不影响 public/pic 文章配图）
+/*.png
 posts-page.yml
 
 # ZCode 会话产物
