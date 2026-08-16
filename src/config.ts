@@ -8,6 +8,10 @@ export const site = {
   locale: "zh_CN",
   language: "zh-CN",
   avatarSrc: "/images/avatar.jpg",
+  homeBanner: {
+    src: "/images/banner.webp",
+    position: "center",
+  },
   copyright: "© 2025-present Ad_closeNN.",
   // owner/repo 格式，非完整 URL；使用处拼 https://github.com/${githubRepo}
   githubRepo: "Ad-closeNN/blog-sc",
@@ -15,7 +19,7 @@ export const site = {
 
 export const navigation = {
   home: { label: "首页", href: "/" },
-  posts: { label: "文章", href: "/posts/" },
+  posts: { label: "归档", href: "/posts/" },
   friends: { label: "友链", href: "/friends/" },
 } as const
 
@@ -127,7 +131,8 @@ export const friends: Friend[] = [
   {
     name: "Google Gemini",
     url: "https://gemini.google.com",
-    avatar: "https://www.gstatic.com/lamda/images/gemini_sparkle_aurora_33f86dc0c0257da337c63.svg",
+    avatar:
+      "https://www.gstatic.com/lamda/images/gemini_sparkle_aurora_33f86dc0c0257da337c63.svg",
     description: "这是真好用",
     group: "站点伙伴",
   },
@@ -280,7 +285,8 @@ export const friends: Friend[] = [
   {
     name: "雪诺的小博客",
     url: "https://blog.4365754.xyz",
-    avatar: "https://photos.4365754.xyz/ac0cf34feb992487db7e63382418382dba213210.jpg",
+    avatar:
+      "https://photos.4365754.xyz/ac0cf34feb992487db7e63382418382dba213210.jpg",
     description: "分享关于网络的众多有趣的小知识",
     group: "朋友博客",
   },
@@ -289,7 +295,8 @@ export const friends: Friend[] = [
 export const friendsApply = {
   title: "将您的网站加入本站友链板块",
   description: "请自行提交 GitHub Issue",
-  issueUrl: "https://github.com/Ad-closeNN/form/issues/new?template=friends-link.yml",
+  issueUrl:
+    "https://github.com/Ad-closeNN/form/issues/new?template=friends-link.yml",
 } as const
 
 // ==================== ga ====================

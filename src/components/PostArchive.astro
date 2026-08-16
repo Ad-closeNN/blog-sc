@@ -1,0 +1,66 @@
+---
+import { Badge } from "@/components/ui/badge"
+import {
+  formatShortDate,
+  groupPostsByYear,
+  postHref,
+  type Post,
+} from "@/lib/posts"
+
+type Props = {
+  posts: Post[]
+}
+
+const { posts } = Astro.props
+const groups = groupPostsByYear(posts)
+---
+
+{
+  groups.length === 0 ? (
+    <p class="archive-empty">暂无文章。</p>
+  ) : (
+    <div class="post-archive">
+      {groups.map((group) => (
+        <section
+          class="post-archive-year"
+          aria-labelledby={`archive-year-${group.year}`}
+        >
+          <header class="post-archive-year-header">
+            <h2 id={`archive-year-${group.year}`}>{group.year}</h2>
+            <span class="post-archive-year-marker" aria-hidden="true" />
+            <span class="post-archive-count">{group.posts.length} 篇</span>
+          </header>
+
+          <ol class="post-archive-list">
+            {group.posts.map((post) => (
+              <li class="post-archive-item">
+                <a class="post-archive-link" href={postHref(post.id)}>
+                  <time datetime={post.data.published.toISOString()}>
+                    {formatShortDate(post.data.published)}
+                  </time>
+                  <span class="post-archive-rail" aria-hidden="true">
+                    <span class="post-archive-dot" />
+                  </span>
+                  <span class="post-archive-title">{post.data.title}</span>
+                  <span class="post-archive-meta">
+                    {post.data.pinned && (
+                      <Badge variant="secondary">置顶</Badge>
+                    )}
+                    {post.data.outdated && (
+                      <Badge variant="destructive">已失效</Badge>
+                    )}
+                    {post.data.tags.length > 0 && (
+                      <span class="post-archive-tags">
+                        {post.data.tags.map((tag) => `#${tag}`).join(" ")}
+                      </span>
+                    )}
+                  </span>
+                </a>
+              </li>
+            ))}
+          </ol>
+        </section>
+      ))}
+    </div>
+  )
+}

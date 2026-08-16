@@ -1,8 +1,14 @@
 ---
-import { buttonVariants } from "@/components/ui/button"
+import PostTimeline from "@/components/PostTimeline.astro"
+import SidebarStats from "@/components/SidebarStats"
+import TaxonomyPanel from "@/components/TaxonomyPanel.astro"
 import { navigation, profile, site } from "@/config"
 import BaseLayout from "@/layouts/BaseLayout.astro"
-import { cn } from "@/lib/utils"
+import { getPosts } from "@/lib/posts"
+import { ArrowRightIcon } from "lucide-react"
+
+const posts = await getPosts()
+const summary = posts.length > 0 ? `共 ${posts.length} 篇文章` : "还没有文章"
 
 const jsonLd = {
   "@type": "WebSite",
@@ -14,43 +20,82 @@ const jsonLd = {
     name: site.shortName,
     url: site.url,
   },
+  mainEntity: {
+    "@type": "ItemList",
+    itemListElement: posts.map((post, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      url: `${site.url}/posts/${post.id}/`,
+      name: post.data.title,
+    })),
+  },
 }
 ---
 
 <BaseLayout
   description={site.description}
   ogType="website"
-  ogImage={site.avatarSrc}
+  ogImage={site.homeBanner.src}
   jsonLd={jsonLd}
+  mainClass="is-home-feed"
 >
   <section
-    class="home-hero mx-auto grid min-h-[calc(100vh-220px)] content-center justify-items-center gap-4 text-center"
+    class="home-banner"
+    data-home-hero
+    aria-labelledby="home-profile-name"
   >
-    <span class="home-avatar-wrap relative inline-block size-36 rounded-full">
+    <img
+      class="home-banner-image"
+      src={site.homeBanner.src}
+      alt=""
+      width="1920"
+      height="1369"
+      loading="eager"
+      fetchpriority="high"
+      style={`object-position: ${site.homeBanner.position}`}
+    />
+    <div class="home-banner-scrim" aria-hidden="true"></div>
+    <div class="home-profile">
       <img
-        class="size-full rounded-full border-2 border-border object-cover select-none"
-        src={site.avatarSrc}
-        alt={`${site.shortName} 的头像`}
-        width="144"
-        height="144"
+        class="home-profile-avatar"
+        src={profile.avatar}
+        alt={`${profile.name} 的头像`}
+        width="128"
+        height="128"
         draggable="false"
       />
-      <span class="home-online-dot" aria-hidden="true"></span>
-    </span>
-    <h1 class="mt-1 mb-0 font-heading text-3xl font-semibold tracking-tight">
-      {site.shortName}
-    </h1>
-    <p class="eyebrow">个人博客</p>
-    <p class="m-0 max-w-md text-base leading-relaxed text-muted-foreground">
-      {profile.bio}
-    </p>
-    <div class="mt-3 flex w-full max-w-md">
-      <a
-        href={navigation.posts.href}
-        class={cn(buttonVariants({ size: "lg" }), "w-full")}
-      >
-        阅读文章
-      </a>
+      <h1 id="home-profile-name">{site.name}</h1>
+      <p>{profile.bio}</p>
+    </div>
+  </section>
+
+  <section class="home-feed-panel" aria-labelledby="home-feed-title">
+    <header class="home-feed-header">
+      <div>
+        <h2 id="home-feed-title">文章列表</h2>
+        <a class="home-feed-archive-link" href={navigation.posts.href}>
+          归档
+          <ArrowRightIcon
+            className="home-feed-archive-arrow"
+            aria-hidden="true"
+            width="14"
+            height="14"
+          />
+        </a>
+      </div>
+      <p>{summary}</p>
+    </header>
+
+    <div class="posts-layout-grid">
+      <div class="posts-layout-main">
+        <PostTimeline posts={posts} />
+      </div>
+      <aside class="posts-layout-right" aria-label="侧栏">
+        <div class="flex flex-col gap-6">
+          <TaxonomyPanel posts={posts} />
+          <SidebarStats client:load />
+        </div>
+      </aside>
     </div>
   </section>
 </BaseLayout>

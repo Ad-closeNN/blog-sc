@@ -190,7 +190,11 @@
   }
   *::-webkit-scrollbar-thumb:hover {
     filter: brightness(1);
-    background: color-mix(in oklch, var(--muted-foreground) 55%, var(--foreground));
+    background: color-mix(
+      in oklch,
+      var(--muted-foreground) 55%,
+      var(--foreground)
+    );
   }
   body {
     @apply bg-background text-foreground;
@@ -422,7 +426,8 @@ html.is-route-loaded .route-progress {
   }
 
   .site-navbar-current-slug,
-  .site-navbar-current-title {
+  .site-navbar-current-title,
+  .site-navbar.is-home-hero-surface {
     transition: none;
   }
 }
@@ -439,8 +444,9 @@ html.is-route-loaded .route-progress {
   gap: 8px;
   padding: 0 max(calc((100% - 1120px) / 2), 16px);
   border-bottom: 1px solid var(--border);
-  /* 默认（贴顶）态：近不透明背景，无 backdrop-filter，省去常驻合成层开销 */
-  background: color-mix(in oklch, var(--background) 96%, transparent);
+  /* 默认（贴顶）态：比纸色略透明 + 轻微毛玻璃 */
+  background: color-mix(in oklch, var(--background) 90%, transparent);
+  backdrop-filter: blur(8px);
 }
 
 /* 滚动态：才启用毛玻璃模糊（仅在内容滚到 navbar 下方时需要） */
@@ -449,8 +455,38 @@ html.is-route-loaded .route-progress {
   backdrop-filter: blur(18px);
 }
 
+/* 首页横幅滚动时：轻毛玻璃 → 模糊透明 → 毛玻璃，变量由 navbar controller 写入。 */
+.site-navbar.is-home-hero-surface {
+  --site-navbar-home-paper-opacity: 90%;
+  --site-navbar-home-blur: 8px;
+  background: color-mix(
+    in oklch,
+    var(--background) var(--site-navbar-home-paper-opacity),
+    transparent
+  );
+  backdrop-filter: blur(var(--site-navbar-home-blur));
+}
+
+@supports (-webkit-backdrop-filter: blur(0)) {
+  .site-navbar.is-home-hero-surface {
+    -webkit-backdrop-filter: blur(var(--site-navbar-home-blur));
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .site-navbar.is-home-hero-surface {
+    transition:
+      background 120ms linear,
+      backdrop-filter 120ms linear;
+  }
+}
+
 /* 与标准声明隔离，避免生产压缩时合并去重 */
 @supports (-webkit-backdrop-filter: blur(0)) {
+  .site-navbar {
+    -webkit-backdrop-filter: blur(8px);
+  }
+
   .site-navbar.is-scrolled {
     -webkit-backdrop-filter: blur(18px);
   }
@@ -706,31 +742,196 @@ main {
   padding: 88px 0 80px;
 }
 
-.home-hero {
-  max-width: 720px;
+/*
+ * 首页横幅（Fuwari 式）：全宽图 + blur，中央叠加头像/站名/简介。
+ * 首页 main 放开宽度限制、顶到 navbar 下沿，改由 .home-feed-panel 自己
+ * 收回 1120px 内容宽度——比用 100vw 负 margin 破出容器更稳（不受滚动条宽度影响）。
+ * blur 只作用在 .home-banner-image 图层，文字层不参与滤镜。
+ */
+main.is-home-feed {
+  width: 100%;
+  padding: 48px 0 80px;
 }
 
-.home-avatar-wrap {
-  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+.home-banner {
+  position: relative;
+  width: 100%;
+  height: clamp(300px, 46vh, 460px);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  isolation: isolate;
+  background: var(--muted);
 }
 
-.home-avatar-wrap:hover {
-  transform: scale(1.03);
-}
-
-.home-online-dot {
+.home-banner-image {
   position: absolute;
-  right: 10px;
-  bottom: 10px;
-  width: 18px;
-  height: 18px;
+  inset: 0;
+  z-index: -2;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* scale 补偿 blur 边缘透明羽化，避免四周露出底色 */
+  transform: scale(1.08);
+  filter: blur(14px) saturate(1.05);
+}
+
+.home-banner-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(
+      ellipse 60% 70% at 50% 50%,
+      color-mix(in oklch, var(--background) 55%, transparent),
+      transparent 78%
+    ),
+    linear-gradient(
+      to bottom,
+      color-mix(in oklch, var(--background) 42%, transparent),
+      color-mix(in oklch, var(--background) 24%, transparent) 45%,
+      var(--background)
+    );
+}
+
+.home-profile {
+  display: grid;
+  justify-items: center;
+  gap: 0.75rem;
+  padding: 1.5rem 1rem 2.25rem;
+  text-align: center;
+}
+
+.home-profile-avatar {
+  width: 7rem;
+  height: 7rem;
   border-radius: 999px;
-  background: #22c55e;
-  /* 与 me.adclosenn.top 一致：双环 box-shadow 描边
-     （kumo-canvas → --background，kumo-line → --border），无呼吸动画 */
-  box-shadow:
-    0 0 0 4px var(--background),
-    0 0 0 5px var(--border);
+  object-fit: cover;
+  user-select: none;
+  border: 3px solid color-mix(in oklch, var(--background) 82%, transparent);
+  box-shadow: 0 12px 32px oklch(0 0 0 / 22%);
+}
+
+.home-profile h1 {
+  margin: 0;
+  color: var(--foreground);
+  font-family: var(--font-heading);
+  font-size: clamp(1.6rem, 4.4vw, 2.1rem);
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  /* 半透明遮罩上仍可读：与背景同色的柔和描边 */
+  text-shadow: 0 1px 12px
+    color-mix(in oklch, var(--background) 70%, transparent);
+}
+
+.home-profile p {
+  margin: 0;
+  max-width: 30rem;
+  color: var(--muted-foreground);
+  font-size: 0.9375rem;
+  line-height: 1.7;
+  text-shadow: 0 1px 10px
+    color-mix(in oklch, var(--background) 70%, transparent);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .home-profile-avatar {
+    transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .home-profile-avatar:hover {
+    transform: scale(1.04);
+  }
+}
+
+/* 文章区：横幅之后回到常规内容宽度与节奏 */
+.home-feed-panel {
+  width: min(1120px, calc(100% - 32px));
+  margin-inline: auto;
+  padding-top: 2.5rem;
+}
+
+.home-feed-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem 1.5rem;
+  margin-bottom: 1.75rem;
+}
+
+.home-feed-header h2 {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+
+.home-feed-header > div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 0.75rem;
+}
+
+/* 胶囊小链接：平时安静，hover 泛起 muted 底色、箭头右滑 */
+.home-feed-archive-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.85rem;
+  border-radius: 999px;
+  color: var(--muted-foreground);
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.8125rem;
+  transition:
+    color 160ms ease,
+    background-color 160ms ease;
+}
+
+.home-feed-archive-link:hover {
+  color: var(--foreground);
+  background-color: var(--muted);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .home-feed-archive-arrow {
+    transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .home-feed-archive-link:hover .home-feed-archive-arrow {
+    transform: translateX(3px);
+  }
+}
+
+.home-feed-header > p {
+  margin: 0;
+  color: var(--muted-foreground);
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+}
+
+@media (max-width: 640px) {
+  main.is-home-feed {
+    width: 100%;
+    padding: 48px 0 56px;
+  }
+
+  .home-banner {
+    height: clamp(260px, 40vh, 340px);
+  }
+
+  .home-profile-avatar {
+    width: 5.5rem;
+    height: 5.5rem;
+  }
+
+  .home-feed-panel {
+    width: calc(100% - 24px);
+    padding-top: 2rem;
+  }
 }
 
 .eyebrow {
@@ -1087,6 +1288,237 @@ main {
   }
 }
 
+/*
+ * 归档时间线（/posts/，Fuwari 式无封面）：单栏窄容器，每篇一行
+ * 「MM-DD · 节点 · 标题 · 标签」，靠年份分组与竖向虚线串起来。
+ */
+main.is-archive-page {
+  width: min(880px, calc(100% - 32px));
+}
+
+.archive-page-header {
+  margin-bottom: 2.25rem;
+}
+
+.archive-page-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 0.85rem;
+}
+
+.archive-page-heading h1 {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: 2rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.archive-page-heading p {
+  margin: 0;
+  color: var(--muted-foreground);
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+}
+
+.archive-empty {
+  color: var(--muted-foreground);
+}
+
+.post-archive {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.post-archive-year-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.35rem;
+  padding-inline: 0.25rem;
+}
+
+.post-archive-year-header h2 {
+  margin: 0;
+  min-width: 4.5rem;
+  color: var(--foreground);
+  font-family: var(--font-heading);
+  font-size: 1.75rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+/* 年份行的空心大节点：与文章行的实心小点区分层级 */
+.post-archive-year-marker {
+  width: 0.6rem;
+  height: 0.6rem;
+  flex-shrink: 0;
+  border: 2px solid
+    color-mix(in oklch, var(--muted-foreground) 55%, transparent);
+  border-radius: 999px;
+}
+
+.post-archive-count {
+  color: var(--muted-foreground);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+}
+
+.post-archive-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.post-archive-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border-radius: calc(var(--radius) * 0.8);
+  padding: 0.55rem 0.75rem;
+  color: inherit;
+  text-decoration: none;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease;
+}
+
+.post-archive-link:hover {
+  background: color-mix(in oklch, var(--muted) 70%, transparent);
+}
+
+.post-archive-link:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.post-archive-link time {
+  flex-shrink: 0;
+  min-width: 3.5rem;
+  color: var(--muted-foreground);
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 竖向虚线导轨：靠 li 上的贯穿伪元素连成整年一条线 */
+.post-archive-item {
+  position: relative;
+}
+
+.post-archive-item::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(0.75rem + 3.5rem + 0.75rem + 0.3rem);
+  width: 0;
+  border-left: 1px dashed color-mix(in oklch, var(--border) 85%, transparent);
+}
+
+.post-archive-rail {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  width: 0.6rem;
+  flex-shrink: 0;
+  justify-content: center;
+}
+
+.post-archive-dot {
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 999px;
+  background: color-mix(in oklch, var(--muted-foreground) 55%, transparent);
+  box-shadow: 0 0 0 4px var(--background);
+  transition:
+    transform 180ms ease,
+    background-color 180ms ease;
+}
+
+.post-archive-link:hover .post-archive-dot {
+  background: var(--primary);
+  transform: scale(1.4);
+}
+
+.post-archive-title {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  line-height: 1.5;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: color 160ms ease;
+}
+
+.post-archive-link:hover .post-archive-title {
+  color: var(--primary);
+}
+
+.post-archive-meta {
+  display: flex;
+  min-width: 0;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.4rem;
+  max-width: 40%;
+}
+
+.post-archive-tags {
+  overflow: hidden;
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 窄屏：保留「日期 · 节点 · 标题」主行；状态提示另起一行，标签让位于标题 */
+@media (max-width: 640px) {
+  .post-archive-link {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding-inline: 0.5rem;
+  }
+
+  .post-archive-item::before {
+    left: calc(0.5rem + 3.25rem + 0.5rem + 0.3rem);
+  }
+
+  .post-archive-link time {
+    min-width: 3.25rem;
+  }
+
+  .post-archive-title {
+    flex: 1 1 calc(100% - 4.85rem);
+    display: -webkit-box;
+    overflow: hidden;
+    white-space: normal;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .post-archive-meta {
+    flex: 1 0 100%;
+    max-width: none;
+    padding-left: calc(3.25rem + 1.1rem);
+  }
+
+  .post-archive-tags {
+    display: none;
+  }
+
+  .post-archive-year-header h2 {
+    font-size: 1.5rem;
+    min-width: 3.75rem;
+  }
+}
+
 .prose {
   color: var(--foreground);
   font-size: 1rem;
@@ -1349,16 +1781,28 @@ main {
 }
 .prose .callout-warning {
   --callout-accent: oklch(0.75 0.18 75);
-  --callout-accent-soft: color-mix(in oklch, oklch(0.75 0.18 75) 12%, transparent);
+  --callout-accent-soft: color-mix(
+    in oklch,
+    oklch(0.75 0.18 75) 12%,
+    transparent
+  );
 }
 .prose .callout-caution {
   --callout-accent: var(--destructive);
-  --callout-accent-soft: color-mix(in oklch, var(--destructive) 12%, transparent);
+  --callout-accent-soft: color-mix(
+    in oklch,
+    var(--destructive) 12%,
+    transparent
+  );
 }
 /* important：GitHub 紫色调（亮 #8250df / 暗 #a371f7） */
 .prose .callout-important {
   --callout-accent: oklch(0.55 0.23 295);
-  --callout-accent-soft: color-mix(in oklch, oklch(0.55 0.23 295) 14%, transparent);
+  --callout-accent-soft: color-mix(
+    in oklch,
+    oklch(0.55 0.23 295) 14%,
+    transparent
+  );
 }
 .dark .prose .callout-important {
   --callout-accent: oklch(0.72 0.16 295);
@@ -1891,7 +2335,7 @@ main.is-posts-page {
   border-left-color: var(--primary);
 }
 
-/* Posts List Page Layout: Timeline + TOC-like Sticky Sidebar */
+/* 首页文章流：Timeline + TOC-like Sticky Sidebar */
 .posts-layout-grid {
   display: flex;
   flex-direction: column;
@@ -1965,8 +2409,15 @@ main.is-posts-page {
   border-radius: 18px;
   /* 网格纸：细线用 foreground 4% 叠加，底色 card 混合——明暗都协调 */
   background:
-    linear-gradient(90deg, color-mix(in oklch, var(--foreground) 4%, transparent) 1px, transparent 1px),
-    linear-gradient(color-mix(in oklch, var(--foreground) 4%, transparent) 1px, transparent 1px),
+    linear-gradient(
+      90deg,
+      color-mix(in oklch, var(--foreground) 4%, transparent) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      color-mix(in oklch, var(--foreground) 4%, transparent) 1px,
+      transparent 1px
+    ),
     color-mix(in oklch, var(--card) 78%, transparent);
   background-size: 34px 34px;
   box-shadow: 0 20px 60px oklch(0 0 0 / 8%);
@@ -1990,7 +2441,12 @@ main.is-posts-page {
   position: absolute;
   inset: 48% 9% auto;
   height: 2px;
-  background: linear-gradient(90deg, var(--primary), var(--primary) 52%, transparent 52%);
+  background: linear-gradient(
+    90deg,
+    var(--primary),
+    var(--primary) 52%,
+    transparent 52%
+  );
 }
 
 .route-line::before,
@@ -2100,8 +2556,16 @@ main.is-posts-page {
   inset: 0;
   z-index: -1;
   background:
-    radial-gradient(circle at 18% 16%, color-mix(in oklch, var(--primary) 6%, transparent), transparent 28rem),
-    radial-gradient(circle at 82% 8%, color-mix(in oklch, var(--muted-foreground) 6%, transparent), transparent 22rem),
+    radial-gradient(
+      circle at 18% 16%,
+      color-mix(in oklch, var(--primary) 6%, transparent),
+      transparent 28rem
+    ),
+    radial-gradient(
+      circle at 82% 8%,
+      color-mix(in oklch, var(--muted-foreground) 6%, transparent),
+      transparent 22rem
+    ),
     var(--background);
   content: "";
 }

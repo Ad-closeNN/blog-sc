@@ -5,7 +5,7 @@ import SidebarStats from "@/components/SidebarStats"
 import { Badge } from "@/components/ui/badge"
 import { buttonVariants } from "@/components/ui/button"
 import TableOfContents from "@/components/TableOfContents"
-import { site } from "@/config"
+import { navigation, site } from "@/config"
 import BaseLayout from "@/layouts/BaseLayout.astro"
 import {
   formatDate,
@@ -16,11 +16,7 @@ import {
   type Post,
 } from "@/lib/posts"
 import { cn } from "@/lib/utils"
-import {
-  ArrowLeftIcon,
-  ArrowRightIcon,
-  SparklesIcon,
-} from "lucide-react"
+import { ArrowLeftIcon, ArrowRightIcon, SparklesIcon } from "lucide-react"
 import { render } from "astro:content"
 
 export async function getStaticPaths() {
@@ -87,7 +83,7 @@ const jsonLd = [
       {
         "@type": "ListItem",
         position: 2,
-        name: "文章",
+        name: "归档",
         item: `${site.url}/posts/`,
       },
       {
@@ -119,7 +115,7 @@ const jsonLd = [
       <!-- Left Column: Main Article Content & Top Back Bar -->
       <article class="post-article-main min-w-0">
         <!-- 返回文章目录长条按钮：跟随正文块宽度，不进右侧 TOC 栏 -->
-        <BackToPostsBar />
+        <BackToPostsBar href={navigation.home.href} label="返回首页" />
 
         <header class="article-header mb-7">
           <p class="eyebrow">
@@ -157,9 +153,7 @@ const jsonLd = [
           {
             post.data.aiSummary && (
               <div class="mt-5 rounded-xl border border-sky-200/70 bg-sky-50 p-4 dark:border-sky-500/20 dark:bg-sky-500/10">
-                <p
-                  class="mb-1 flex select-none items-center gap-1.5 text-sm font-medium"
-                >
+                <p class="mb-1 flex items-center gap-1.5 text-sm font-medium select-none">
                   <SparklesIcon className="size-4 text-sky-600 dark:text-sky-400" />
                   <span>AI 摘要</span>
                   {post.data.aiSummaryModel && (

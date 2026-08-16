@@ -72,6 +72,25 @@ export function groupPostsByMonth(posts: Post[]) {
   return [...map.values()]
 }
 
+/** 按年份倒序分组（归档页用）；组内保持传入顺序（getPosts 已按发布时间倒序） */
+export function groupPostsByYear(posts: Post[]) {
+  const map = new Map<number, Post[]>()
+
+  for (const post of posts) {
+    const year = post.data.published.getFullYear()
+    const group = map.get(year)
+    if (group) {
+      group.push(post)
+    } else {
+      map.set(year, [post])
+    }
+  }
+
+  return [...map.entries()]
+    .sort((a, b) => b[0] - a[0])
+    .map(([year, items]) => ({ year, posts: items }))
+}
+
 export function postHref(id: string) {
   return `/posts/${id}/`
 }

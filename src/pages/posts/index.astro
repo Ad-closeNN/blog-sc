@@ -1,18 +1,15 @@
 ---
-import PostTimeline from "@/components/PostTimeline.astro"
-import SidebarStats from "@/components/SidebarStats"
-import TaxonomyPanel from "@/components/TaxonomyPanel.astro"
-import { navigation, site } from "@/config"
+import PostArchive from "@/components/PostArchive.astro"
+import { site } from "@/config"
 import BaseLayout from "@/layouts/BaseLayout.astro"
 import { getPosts } from "@/lib/posts"
 
 const posts = await getPosts()
-const summary =
-  posts.length > 0 ? `共 ${posts.length} 篇` : "还没有文章"
+const summary = posts.length > 0 ? `共 ${posts.length} 篇` : "还没有文章"
 
 const jsonLd = {
   "@type": "CollectionPage",
-  name: navigation.posts.label,
+  name: "文章归档",
   description: summary,
   url: `${site.url}/posts/`,
   isPartOf: {
@@ -33,29 +30,20 @@ const jsonLd = {
 ---
 
 <BaseLayout
-  title={navigation.posts.label}
+  title="归档"
   description={summary}
   ogType="website"
   ogImage={site.avatarSrc}
   jsonLd={jsonLd}
-  mainClass="is-posts-page"
+  mainClass="is-archive-page"
+  breadcrumbLabel="归档"
 >
-  <section class="posts-hero mb-8 max-w-[760px]">
-    <h1 class="m-0 font-heading text-3xl font-semibold tracking-tight">
-      {navigation.posts.label}
-    </h1>
-    <p class="mt-3 text-muted-foreground">{summary}</p>
+  <section class="archive-page-header">
+    <div class="archive-page-heading">
+      <h1>归档</h1>
+      <p>{summary}</p>
+    </div>
   </section>
 
-  <div class="posts-layout-grid">
-    <div class="posts-layout-main">
-      <PostTimeline posts={posts} />
-    </div>
-    <aside class="posts-layout-right" aria-label="侧栏">
-      <div class="flex flex-col gap-6">
-        <TaxonomyPanel posts={posts} />
-        <SidebarStats client:load />
-      </div>
-    </aside>
-  </div>
+  <PostArchive posts={posts} />
 </BaseLayout>

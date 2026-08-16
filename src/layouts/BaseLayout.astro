@@ -156,19 +156,121 @@ const ogImageAbs = Astro.props.ogImage
         if (window[installKey]) return
         window[installKey] = true
 
-        // navbar 高度 48px；哨兵滚入 navbar 覆盖区时启用毛玻璃，
-        // 贴顶（哨兵仍在 navbar 下方可见）时保持纯色背景，省去常驻合成层
+        // 非首页沿用 sentinel 判断滚动态；首页则随 banner 经过导航区域，
+        // 依次呈现轻毛玻璃 → 模糊透明 → 毛玻璃。统一在此管理，避免 ClientRouter
+        // 下多个 scroll listener / observer 跨页面残留。
         const navSelector = ".site-navbar"
         const sentinelSelector = ".site-navbar-sentinel"
+        const homeHeroSelector = "[data-home-hero]"
         let observer = null
+        let resizeObserver = null
+        let scrollHandler = null
+        let resizeHandler = null
+        let frame = null
+        let updateHomeSurface = null
+
+        const clearHomeSurface = (nav) => {
+          nav.classList.remove("is-home-hero-surface")
+          nav.style.removeProperty("--site-navbar-home-paper-opacity")
+          nav.style.removeProperty("--site-navbar-home-blur")
+        }
+
+        const cleanup = () => {
+          if (observer) {
+            observer.disconnect()
+            observer = null
+          }
+          if (resizeObserver) {
+            resizeObserver.disconnect()
+            resizeObserver = null
+          }
+          if (scrollHandler) {
+            window.removeEventListener("scroll", scrollHandler)
+            scrollHandler = null
+          }
+          if (resizeHandler) {
+            window.removeEventListener("resize", resizeHandler)
+            resizeHandler = null
+          }
+          if (frame !== null) {
+            cancelAnimationFrame(frame)
+            frame = null
+          }
+          updateHomeSurface = null
+        }
 
         const setup = () => {
+          cleanup()
+
           const nav = document.querySelector(navSelector)
           const sentinel = document.querySelector(sentinelSelector)
           if (!nav || !sentinel) return
 
-          if (observer) observer.disconnect()
+          nav.classList.remove("is-scrolled")
+          clearHomeSurface(nav)
 
+          const hero = nav.classList.contains("is-home")
+            ? document.querySelector(homeHeroSelector)
+            : null
+
+          if (hero) {
+            nav.classList.add("is-home-hero-surface")
+            let lastProgress = -1
+
+            const update = () => {
+              frame = null
+              const rect = hero.getBoundingClientRect()
+              const heroTop = window.scrollY + rect.top
+              const heroHeight = Math.max(rect.height, 1)
+              const progress = Math.min(
+                Math.max((window.scrollY - heroTop) / heroHeight, 0),
+                1
+              )
+              // smoothstep 使每个阶段的起止更柔和；前 80% 从贴顶轻毛玻璃
+              // （纸色 90% + 模糊 8px）淡向透明并增强模糊，最后 20% 恢复为
+              // 滚动态纸色毛玻璃（82% + 18px）的终态。
+              const smoothstep = (value) => value * value * (3 - 2 * value)
+              const paperOpacity =
+                progress <= 0.8
+                  ? 90 - 74 * smoothstep(progress / 0.8)
+                  : 16 + 66 * smoothstep((progress - 0.8) / 0.2)
+              const blur =
+                progress <= 0.8 ? 8 + 10 * smoothstep(progress / 0.8) : 18
+              const paper = Math.round(paperOpacity * 100) / 100
+              const roundedBlur = Math.round(blur * 100) / 100
+              const surfaceKey = `${paper}|${roundedBlur}`
+              if (surfaceKey === lastProgress) return
+
+              lastProgress = surfaceKey
+              nav.style.setProperty(
+                "--site-navbar-home-paper-opacity",
+                `${paper}%`
+              )
+              nav.style.setProperty(
+                "--site-navbar-home-blur",
+                `${roundedBlur}px`
+              )
+            }
+
+            const scheduleUpdate = () => {
+              if (frame === null) frame = requestAnimationFrame(update)
+            }
+
+            updateHomeSurface = scheduleUpdate
+            scrollHandler = scheduleUpdate
+            resizeHandler = scheduleUpdate
+            window.addEventListener("scroll", scrollHandler, { passive: true })
+            window.addEventListener("resize", resizeHandler)
+            if ("ResizeObserver" in window) {
+              resizeObserver = new ResizeObserver(scheduleUpdate)
+              resizeObserver.observe(hero)
+            }
+            scheduleUpdate()
+            return
+          }
+
+          // navbar 高度 48px；哨兵滚入 navbar 覆盖区时加深毛玻璃，
+          // 贴顶（哨兵仍在 navbar 下方可见）时保持较浅的轻毛玻璃
           observer = new IntersectionObserver(
             (entries) => {
               for (const entry of entries) {
@@ -181,6 +283,7 @@ const ogImageAbs = Astro.props.ogImage
         }
 
         document.addEventListener("astro:page-load", setup)
+        window.addEventListener("pageshow", () => updateHomeSurface?.())
         setup()
       })()
     </script>

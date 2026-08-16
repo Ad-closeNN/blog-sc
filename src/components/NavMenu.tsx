@@ -1,5 +1,11 @@
 import { links, navigation } from "@/config"
-import { BookHeartIcon, GitBranchIcon, MoreVerticalIcon, RssIcon } from "lucide-react"
+import {
+  BookHeartIcon,
+  BookOpenIcon,
+  GitBranchIcon,
+  MoreVerticalIcon,
+  RssIcon,
+} from "lucide-react"
 import { Fragment, useEffect, useRef } from "react"
 
 import {
@@ -21,6 +27,12 @@ type MenuEntry = {
 }
 
 const entries: MenuEntry[] = [
+  {
+    key: "posts",
+    label: navigation.posts.label,
+    href: navigation.posts.href,
+    icon: <BookOpenIcon />,
+  },
   {
     key: "friends",
     label: navigation.friends.label,
@@ -44,7 +56,7 @@ const entries: MenuEntry[] = [
 ]
 
 /**
- * 导航下拉菜单：友链 / RSS / GitHub。
+ * 导航下拉菜单：归档 / 友链 / RSS / GitHub。
  * 放在桌面端 SearchBox 与 ThemeToggle 之间。
  *
  * transition:persist 下切页（如点友链跳到 /friends/）island 保留 React 状态，
@@ -53,7 +65,9 @@ const entries: MenuEntry[] = [
  * 时用 actionsRef.close()+unmount() 强制复位（与 SearchBox 的强关范式一致）。
  */
 export default function NavMenu() {
-  const menuActionsRef = useRef<{ close: () => void; unmount: () => void }>(null)
+  const menuActionsRef = useRef<{ close: () => void; unmount: () => void }>(
+    null
+  )
 
   useEffect(() => {
     const reset = () => {

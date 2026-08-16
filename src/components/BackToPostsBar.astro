@@ -1,18 +1,28 @@
 ---
 import { buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { navigation } from "@/config"
 import { ArrowLeftIcon } from "lucide-react"
+
+type Props = {
+  href?: string
+  label?: string
+}
+
+const { href = navigation.posts.href, label = "返回文章目录" } = Astro.props
 ---
 
 <a
-  href="/posts/"
+  href={href}
   class={cn(
     buttonVariants({ variant: "outline", size: "lg" }),
     "back-to-posts-bar group mb-6 flex w-full items-center justify-center gap-2 no-underline"
   )}
 >
-  <ArrowLeftIcon className="size-4 shrink-0 transition-transform duration-200 group-hover:-translate-x-1" />
-  <span>返回文章目录</span>
+  <ArrowLeftIcon
+    className="size-4 shrink-0 transition-transform duration-200 group-hover:-translate-x-1"
+  />
+  <span>{label}</span>
 </a>
 
 <style>
