@@ -3,7 +3,12 @@ import { getRssString } from "@astrojs/rss"
 
 import { site } from "@/config"
 import { sanitizeFeedHtml } from "@/lib/feed"
-import { getPostCover, getPosts, postHref } from "@/lib/posts"
+import {
+  getPostCover,
+  getPosts,
+  postDescription,
+  postHref,
+} from "@/lib/posts"
 
 /**
  * RSS 全文订阅源端点，输出 /rss.xml。
@@ -57,7 +62,7 @@ export const GET: APIRoute = async (context) => {
     return {
       title: post.data.title,
       link: postHref(post.id),
-      description: post.data.description || post.data.title,
+      description: postDescription(post),
       pubDate: post.data.published,
       // 先 trim 再去重，避免「教程」与「教程 」被当成两个分类
       categories: [

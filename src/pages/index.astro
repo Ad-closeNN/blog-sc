@@ -2,7 +2,7 @@
 import PostTimeline from "@/components/PostTimeline.astro"
 import SidebarStats from "@/components/SidebarStats"
 import TaxonomyPanel from "@/components/TaxonomyPanel.astro"
-import { navigation, profile, site } from "@/config"
+import { links, navigation, profile, site } from "@/config"
 import BaseLayout from "@/layouts/BaseLayout.astro"
 import { getPosts } from "@/lib/posts"
 import { ArrowRightIcon } from "lucide-react"
@@ -19,6 +19,7 @@ const jsonLd = {
     "@type": "Person",
     name: site.shortName,
     url: site.url,
+    sameAs: [links.me.href, links.github.href, links.x.href],
   },
   mainEntity: {
     "@type": "ItemList",

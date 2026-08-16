@@ -8,8 +8,10 @@ import TableOfContents from "@/components/TableOfContents"
 import { navigation, site } from "@/config"
 import BaseLayout from "@/layouts/BaseLayout.astro"
 import {
+  countWordsInMarkdown,
   formatDate,
   getPosts,
+  postDescription,
   postHref,
   publicPath,
   withNeighbors,
@@ -47,19 +49,23 @@ const navBtn = buttonVariants({
   className:
     "h-auto min-h-12 gap-2 px-4 py-3 text-left whitespace-normal no-underline",
 })
-// 分享图：封面（customcover / image）优先，无封面兜底头像
-const ogImage = cover || site.avatarSrc
+// 分享图：仅封面（customcover / image），无封面不兜底
+const ogImage = cover
+const description = postDescription(post)
 const articleUrl = `${site.url}/posts/${post.id}/`
-// Article + BreadcrumbList 结构化数据
+// BlogPosting + BreadcrumbList 结构化数据
 const jsonLd = [
   {
-    "@type": "Article",
+    "@type": "BlogPosting",
     headline: post.data.title,
-    description: post.data.description || post.data.title,
+    description,
     datePublished: post.data.published.toISOString(),
     dateModified: (post.data.updated ?? post.data.published).toISOString(),
     url: articleUrl,
-    image: ogImage ? `${site.url}${ogImage}` : undefined,
+    mainEntityOfPage: articleUrl,
+    inLanguage: site.language,
+    wordCount: countWordsInMarkdown(post.body ?? ""),
+    image: cover ? `${site.url}${cover}` : undefined,
     author: {
       "@type": "Person",
       name: site.shortName,
@@ -99,13 +105,13 @@ const jsonLd = [
 
 <BaseLayout
   title={post.data.title}
-  description={post.data.description || post.data.title}
+  description={postDescription(post, 150)}
   ogType="article"
   publishedTime={post.data.published}
   modifiedTime={post.data.updated ?? post.data.published}
   tags={tags}
   headings={headings}
-  ogImage={ogImage}
+  ogImage={ogImage || undefined}
   jsonLd={jsonLd}
   mainClass="is-post-page"
   navbarSwapTitle={post.data.title}

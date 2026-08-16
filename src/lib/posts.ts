@@ -95,6 +95,19 @@ export function postHref(id: string) {
   return `/posts/${id}/`
 }
 
+/**
+ * 文章描述兜底链：description → aiSummary → 标题。
+ * 无 description 的文章不再让 meta / RSS 重复一遍标题。
+ * max 提供时按码点数截断（meta description 场景约 150），尾部补省略号。
+ */
+export function postDescription(post: Post, max?: number) {
+  const raw = post.data.description || post.data.aiSummary || post.data.title
+  if (!max) return raw
+  const chars = Array.from(raw)
+  if (chars.length <= max) return raw
+  return `${chars.slice(0, max).join("")}…`
+}
+
 export type Taxonomy = {
   name: string
   slug: string
