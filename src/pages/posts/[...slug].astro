@@ -7,6 +7,7 @@ import { buttonVariants } from "@/components/ui/button"
 import TableOfContents from "@/components/TableOfContents"
 import { navigation, site } from "@/config"
 import BaseLayout from "@/layouts/BaseLayout.astro"
+import { getBuildCommit } from "@/lib/build-commit"
 import {
   countWordsInMarkdown,
   formatDate,
@@ -43,6 +44,7 @@ const cover = publicPath(
   post.data.customcover ||
     (post.data.showcover !== false ? post.data.image : "")
 )
+const buildCommit = getBuildCommit()
 const tags = post.data.tags
 const navBtn = buttonVariants({
   variant: "outline",
@@ -241,7 +243,7 @@ const jsonLd = [
       <aside class="post-sidebar-right">
         <TableOfContents client:load headings={headings} />
         <div class="mt-6">
-          <SidebarStats client:load />
+          <SidebarStats client:load commit={buildCommit} />
         </div>
       </aside>
     </div>

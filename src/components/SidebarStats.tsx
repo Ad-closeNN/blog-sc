@@ -5,15 +5,7 @@ import {
   QuoteIcon,
 } from "lucide-react"
 
-import { site } from "@/config"
-
-type Commit = { shortSha: string; url: string; message: string }
-
-type GithubCommit = {
-  sha: string
-  html_url: string
-  commit: { message: string }
-}
+import type { BuildCommit } from "@/lib/build-commit"
 
 type SiteStatsData = { pageviews?: { value?: number } }
 
@@ -26,16 +18,19 @@ type BlogUmamiStore = {
   ) => Promise<SiteStatsData | null | undefined>
 }
 
+type Props = {
+  /** 构建期注入的 commit（Workers Builds 环境变量），未注入为 null → 显示 dev */
+  commit?: BuildCommit | null
+}
+
 /**
- * 侧栏动态卡片：一言 / Umami 全站访问量 / GitHub 最新 commit。
- * React + client:load（与 TableOfContents 惯例一致），SSR 渲染占位，水合后 fetch。
- * 三路各自 try/catch 降级，互不阻塞。
+ * 侧栏动态卡片：一言 / Umami 全站访问量 / 构建期 commit。
+ * React + client:load（与 TableOfContents 惯例一致），
+ * 一言与访问量 SSR 渲染占位、水合后 fetch；commit 由构建期 env 静态注入，无运行时请求。
  */
-export default function SidebarStats() {
+export default function SidebarStats({ commit = null }: Props) {
   const [hitokoto, setHitokoto] = useState("正在加载一言…")
   const [views, setViews] = useState("加载中…")
-  const [commit, setCommit] = useState<Commit | null>(null)
-  const [commitText, setCommitText] = useState("加载中…")
 
   useEffect(() => {
     let cancelled = false
@@ -67,26 +62,6 @@ export default function SidebarStats() {
       }
     })()
 
-    // GitHub 最新 commit
-    const repo = site.githubRepo
-    fetch(`https://api.github.com/repos/${repo}/commits?per_page=1`)
-      .then((r) => {
-        if (!r.ok) throw new Error("获取信息失败")
-        return r.json() as Promise<GithubCommit[]>
-      })
-      .then((data) => {
-        if (cancelled || !data[0]) return
-        const c = data[0]
-        setCommit({
-          shortSha: c.sha.slice(0, 7),
-          url: c.html_url,
-          message: c.commit.message,
-        })
-      })
-      .catch(() => {
-        if (!cancelled) setCommitText("提交信息不可用")
-      })
-
     return () => {
       cancelled = true
     }
@@ -116,13 +91,13 @@ export default function SidebarStats() {
               href={commit.url}
               target="_blank"
               rel="noopener noreferrer"
-              title={commit.message}
+              title={commit.branch ? `${commit.branch}@${commit.sha}` : commit.sha}
               className="truncate transition-colors hover:text-foreground"
             >
               当前提交：{commit.shortSha}
             </a>
           ) : (
-            <span>{commitText}</span>
+            <span>当前提交：dev</span>
           )}
         </li>
       </ul>

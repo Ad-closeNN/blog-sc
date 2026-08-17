@@ -104,4 +104,4 @@ Typical page pattern: frontmatter imports `Layout` + React components → `<Layo
 - 搜索代码用 `rg` 而非 `grep`。
 - 配置集中在 `src/config.ts` 单文件（site/navigation/links/footer/profile/friends/ga/umami），不要拆成目录。
 - 热力图模块已删除（`PostHeatmap.astro` / `heatmap-core.ts` 均移除），不要再引用。
-- 侧栏「信息」卡（`SidebarStats.tsx`）：一言 API / Umami 全站访问量 / GitHub 最新 commit（`site.githubRepo` 是私有仓库时 commit 显示「提交信息不可用」，属正常降级）。
+- 侧栏「信息」卡（`SidebarStats.tsx`）：一言 API / Umami 全站访问量 / 构建期 commit。commit 由 Workers Builds 自动注入的环境变量 `WORKERS_CI_COMMIT_SHA` / `WORKERS_CI_BRANCH` 在构建时读取（`src/lib/build-commit.ts`），本地 dev / 未注入时显示 dev——**不要再改回运行时调 GitHub API**。
