@@ -7,7 +7,7 @@ export const site = {
   url: "https://blog.adclosenn.top",
   locale: "zh_CN",
   language: "zh-CN",
-  avatarSrc: "/images/avatar.jpg",
+  avatarSrc: "/images/avatar.png",
   homeBanner: {
     src: "/images/banner.webp",
     position: "center",
@@ -88,7 +88,7 @@ export const footer = {
 
 /** 作者信息：侧栏迷你头像卡与友链页「本站友链信息」共用 */
 export const profile = {
-  avatar: "/images/avatar.jpg",
+  avatar: "/images/avatar.png",
   name: "Ad_closeNN",
   bio: "永远相信美好的事情即将发生",
   links: [
