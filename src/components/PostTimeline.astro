@@ -1,5 +1,4 @@
 ---
-import { buttonVariants } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
   formatShortDate,
@@ -9,29 +8,21 @@ import {
   taxonomySlug,
   type Post,
 } from "@/lib/posts"
-import { cn } from "@/lib/utils"
 
 type Props = {
   posts: Post[]
 }
 
 const { posts } = Astro.props
-
-// 首屏只展示最新 8 篇，其余折叠在按钮后（内容仍全量进初始 HTML，SEO 无损）
-const VISIBLE_COUNT = 8
-const visiblePosts = posts.slice(0, VISIBLE_COUNT)
-const remainingPosts = posts.slice(VISIBLE_COUNT)
-const visibleGroups = groupPostsByMonth(visiblePosts)
-const remainingGroups = groupPostsByMonth(remainingPosts)
-const hasMore = remainingPosts.length > 0
+const groups = groupPostsByMonth(posts)
 ---
 
 {
-  visibleGroups.length === 0 && !hasMore ? (
+  groups.length === 0 ? (
     <p class="text-muted-foreground">暂无文章。</p>
   ) : (
     <div class="post-timeline" role="list">
-      {visibleGroups.map((group) => (
+      {groups.map((group) => (
         <section
           class="post-timeline-month"
           aria-labelledby={`month-${group.key}`}
@@ -61,7 +52,9 @@ const hasMore = remainingPosts.length > 0
                   <li
                     class="post-timeline-item group"
                     role="listitem"
-                    data-tags={post.data.tags.map((tag) => taxonomySlug(tag)).join(" ")}
+                    data-tags={post.data.tags
+                      .map((tag) => taxonomySlug(tag))
+                      .join(" ")}
                     data-category={
                       post.data.category
                         ? taxonomySlug(post.data.category)
@@ -71,7 +64,10 @@ const hasMore = remainingPosts.length > 0
                     <span class="post-timeline-dot" aria-hidden="true" />
                     <a href={href} class="post-timeline-card">
                       {cover && (
-                        <div class="post-timeline-cover">
+                        <div
+                          class="post-timeline-cover"
+                          style={`--cover-url: url('${cover}')`}
+                        >
                           <img
                             src={cover}
                             alt={post.data.title}
@@ -130,164 +126,6 @@ const hasMore = remainingPosts.length > 0
           </div>
         </section>
       ))}
-
-      {hasMore && (
-        <>
-          <div
-            id="timeline-remaining"
-            class="scroll-mt-[calc(48px+0.75rem)]"
-            data-timeline-remaining
-            hidden
-          >
-            {remainingGroups.map((group) => (
-              <section
-                class="post-timeline-month"
-                aria-labelledby={`month-${group.key}`}
-              >
-                <div class="post-timeline-rail" aria-hidden="true">
-                  <span class="post-timeline-dot-month" />
-                  <span class="post-timeline-line" />
-                </div>
-
-                <div class="post-timeline-body">
-                  <h2
-                    id={`month-${group.key}`}
-                    class="post-timeline-month-title flex items-center gap-2 font-mono text-xs font-semibold tracking-[0.08em] text-muted-foreground uppercase"
-                  >
-                    <span>{group.label}</span>
-                    <span class="font-sans text-[11px] font-normal opacity-60">
-                      ({group.posts.length})
-                    </span>
-                  </h2>
-
-                  <ul class="post-timeline-list m-0 list-none p-0">
-                    {group.posts.map((post) => {
-                      const href = postHref(post.id)
-                      const date = formatShortDate(post.data.published)
-                      const cover = getPostCover(post)
-                      return (
-                        <li
-                    class="post-timeline-item group"
-                    role="listitem"
-                    data-tags={post.data.tags.map((tag) => taxonomySlug(tag)).join(" ")}
-                    data-category={
-                      post.data.category
-                        ? taxonomySlug(post.data.category)
-                        : undefined
-                    }
-                  >
-                          <span class="post-timeline-dot" aria-hidden="true" />
-                          <a href={href} class="post-timeline-card">
-                            {cover && (
-                              <div class="post-timeline-cover">
-                                <img
-                                  src={cover}
-                                  alt={post.data.title}
-                                  loading="lazy"
-                                  class="post-timeline-cover-img"
-                                />
-                              </div>
-                            )}
-                            <div class="post-timeline-card-content">
-                              <div class="flex flex-wrap items-center gap-2">
-                                <time
-                                  class="post-timeline-date font-mono text-xs font-medium tracking-wide"
-                                  datetime={post.data.published.toISOString()}
-                                >
-                                  {date}
-                                </time>
-                                {post.data.pinned && (
-                                  <Badge variant="secondary">置顶</Badge>
-                                )}
-                                {post.data.outdated && (
-                                  <Badge variant="destructive">已失效</Badge>
-                                )}
-                                {post.data.category && (
-                                  <Badge variant="outline">
-                                    {post.data.category}
-                                  </Badge>
-                                )}
-                              </div>
-                              <h3 class="post-timeline-title m-0 text-base leading-snug font-semibold">
-                                {post.data.title}
-                              </h3>
-                              {post.data.description && (
-                                <p class="m-0 line-clamp-2 text-sm leading-relaxed text-muted-foreground">
-                                  {post.data.description}
-                                </p>
-                              )}
-                              {post.data.tags.length > 0 && (
-                                <div class="flex flex-wrap gap-1.5 pt-0.5">
-                                  {post.data.tags.map((tag) => (
-                                    <Badge
-                                      variant="secondary"
-                                      className="post-timeline-badge text-[11px] font-normal text-muted-foreground opacity-90"
-                                      data-filter-tag={taxonomySlug(tag)}
-                                    >
-                                      #{tag}
-                                    </Badge>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          </a>
-                        </li>
-                      )
-                    })}
-                  </ul>
-                </div>
-              </section>
-            ))}
-          </div>
-
-          <button
-            type="button"
-            class={cn(
-              buttonVariants({ variant: "outline", size: "lg" }),
-              "mt-6 w-full"
-            )}
-            data-timeline-expand
-            aria-controls="timeline-remaining"
-            aria-expanded="false"
-          >
-            展开剩余 {remainingPosts.length} 篇
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
-            >
-              <path d="m6 9 6 6 6-6" />
-            </svg>
-          </button>
-        </>
-      )}
     </div>
   )
 }
-
-<script>
-  function initTimelineExpand() {
-    const button = document.querySelector<HTMLElement>("[data-timeline-expand]")
-    const container = document.querySelector<HTMLElement>(
-      "[data-timeline-remaining]"
-    )
-    if (!button || !container) return
-
-    button.addEventListener("click", () => {
-      container.hidden = false
-      button.setAttribute("aria-expanded", "true")
-      button.hidden = true
-      // 展开后平滑滚动到折叠区顶部，让用户看到新内容
-      container.scrollIntoView({ behavior: "smooth", block: "start" })
-    })
-  }
-
-  document.addEventListener("astro:page-load", initTimelineExpand)
-</script>

@@ -113,6 +113,33 @@ if (!isHome) {
         </ol>
       )
     }
+
+    <!-- 主页 JS 分页 ≥2 页时激活：显示「首页 / N/总页」（HomePagination 脚本控制） -->
+    {
+      isHome && (
+        <ol
+          class="site-navbar-breadcrumb"
+          aria-label="面包屑"
+          aria-hidden="true"
+          data-home-page-crumbs
+        >
+          <li class="site-navbar-crumb">
+            <a href={navigation.home.href} class="site-navbar-link">
+              {navigation.home.label}
+            </a>
+          </li>
+          <li class="site-navbar-crumb">
+            <ChevronRightIcon
+              className="site-navbar-sep size-3.5 text-muted-foreground"
+              aria-hidden="true"
+            />
+            <span class="site-navbar-current" aria-current="page">
+              <span data-navbar-page-indicator>1/1</span>
+            </span>
+          </li>
+        </ol>
+      )
+    }
   </div>
 
   <!-- 桌面端显示 (md:flex) -->

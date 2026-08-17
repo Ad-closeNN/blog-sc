@@ -1,0 +1,202 @@
+---
+import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
+
+type Props = {
+  currentPage: number
+  totalPages: number
+}
+
+const { currentPage, totalPages } = Astro.props
+
+// Fuwari 窗口算法：当前页 ±2 共 5 个页码，两端收缩为 1 … n … N（-1 为省略号）
+const HIDDEN = -1
+const ADJ_DIST = 2
+const VISIBLE = ADJ_DIST * 2 + 1
+
+let count = 1
+let l = currentPage
+let r = currentPage
+while (0 < l - 1 && r + 1 <= totalPages && count + 2 <= VISIBLE) {
+  count += 2
+  l--
+  r++
+}
+while (0 < l - 1 && count < VISIBLE) {
+  count++
+  l--
+}
+while (r + 1 <= totalPages && count < VISIBLE) {
+  count++
+  r++
+}
+
+const pages: number[] = []
+if (l > 1) pages.push(1)
+if (l === 3) pages.push(2)
+if (l > 3) pages.push(HIDDEN)
+for (let i = l; i <= r; i++) pages.push(i)
+if (r < totalPages - 2) pages.push(HIDDEN)
+if (r === totalPages - 2) pages.push(totalPages - 1)
+if (r < totalPages) pages.push(totalPages)
+---
+
+{
+  totalPages > 1 && (
+    <nav class="home-pagination" aria-label="文章分页" data-home-pagination>
+      <button
+        type="button"
+        class="home-pagination-arrow"
+        data-pagination-prev
+        aria-label="上一页"
+        disabled={currentPage <= 1}
+      >
+        <ChevronLeftIcon className="size-5" aria-hidden="true" />
+      </button>
+
+      <div class="home-pagination-pages" data-pagination-pages>
+        {pages.map((p) =>
+          p === HIDDEN ? (
+            <span class="home-pagination-gap" aria-hidden="true">
+              …
+            </span>
+          ) : p === currentPage ? (
+            <span class="home-pagination-page is-current" aria-current="page">
+              {p}
+            </span>
+          ) : (
+            <button
+              type="button"
+              class="home-pagination-page"
+              data-page={p}
+              aria-label={`第 ${p} 页`}
+            >
+              {p}
+            </button>
+          )
+        )}
+      </div>
+
+      <button
+        type="button"
+        class="home-pagination-arrow"
+        data-pagination-next
+        aria-label="下一页"
+        disabled={currentPage >= totalPages}
+      >
+        <ChevronRightIcon className="size-5" aria-hidden="true" />
+      </button>
+    </nav>
+  )
+}
+
+<script>
+  /** 与组件 frontmatter 同源的窗口算法，切换页码时在客户端重渲染页码条 */
+  function renderPages(current: number, total: number): string {
+    const HIDDEN = -1
+    const VISIBLE = 5
+    let count = 1
+    let l = current
+    let r = current
+    while (0 < l - 1 && r + 1 <= total && count + 2 <= VISIBLE) {
+      count += 2
+      l--
+      r++
+    }
+    while (0 < l - 1 && count < VISIBLE) {
+      count++
+      l--
+    }
+    while (r + 1 <= total && count < VISIBLE) {
+      count++
+      r++
+    }
+    const items: number[] = []
+    if (l > 1) items.push(1)
+    if (l === 3) items.push(2)
+    if (l > 3) items.push(HIDDEN)
+    for (let i = l; i <= r; i++) items.push(i)
+    if (r < total - 2) items.push(HIDDEN)
+    if (r === total - 2) items.push(total - 1)
+    if (r < total) items.push(total)
+    return items
+      .map((p) => {
+        if (p === HIDDEN)
+          return `<span class="home-pagination-gap" aria-hidden="true">…</span>`
+        if (p === current)
+          return `<span class="home-pagination-page is-current" aria-current="page">${p}</span>`
+        return `<button type="button" class="home-pagination-page" data-page="${p}" aria-label="第 ${p} 页">${p}</button>`
+      })
+      .join("")
+  }
+
+  function initHomePagination() {
+    const root = document.querySelector<HTMLElement>("[data-home-pagination]")
+    const containers = [
+      ...document.querySelectorAll<HTMLElement>("[data-home-timeline-page]"),
+    ]
+    if (!root || containers.length < 2) return
+
+    const totalPages = containers.length
+    const pagesEl = root.querySelector<HTMLElement>("[data-pagination-pages]")
+    const prevBtn = root.querySelector<HTMLButtonElement>(
+      "[data-pagination-prev]"
+    )
+    const nextBtn = root.querySelector<HTMLButtonElement>(
+      "[data-pagination-next]"
+    )
+    const anchor = document.querySelector<HTMLElement>("[data-home-feed-panel]")
+    if (!pagesEl || !prevBtn || !nextBtn) return
+
+    const navbar = document.querySelector(".site-navbar")
+    const indicator = navbar?.querySelector<HTMLElement>(
+      "[data-navbar-page-indicator]"
+    )
+    const homeCrumbs = navbar?.querySelector<HTMLElement>(
+      "[data-home-page-crumbs]"
+    )
+
+    let current = 1
+
+    const apply = () => {
+      containers.forEach((el) => {
+        el.hidden = Number(el.dataset.homeTimelinePage) !== current
+      })
+      pagesEl.innerHTML = renderPages(current, totalPages)
+      prevBtn.disabled = current <= 1
+      nextBtn.disabled = current >= totalPages
+      // 第 2 页起：navbar 切到「首页 / N/总页」面包屑，回第 1 页恢复品牌
+      if (navbar && indicator && homeCrumbs) {
+        navbar.classList.toggle("is-paged", current > 1)
+        homeCrumbs.setAttribute("aria-hidden", current > 1 ? "false" : "true")
+        indicator.textContent = `${current}/${totalPages}`
+      }
+    }
+
+    const go = (page: number) => {
+      const target = Math.min(Math.max(page, 1), totalPages)
+      if (target === current) return
+      current = target
+      apply()
+      const reduced = window.matchMedia(
+        "(prefers-reduced-motion: reduce)"
+      ).matches
+      anchor?.scrollIntoView({
+        behavior: reduced ? "auto" : "smooth",
+        block: "start",
+      })
+    }
+
+    root.addEventListener("click", (event) => {
+      const target = event.target as HTMLElement
+      const pageBtn = target.closest<HTMLElement>("[data-page]")
+      if (pageBtn) {
+        go(Number(pageBtn.dataset.page))
+        return
+      }
+      if (target.closest("[data-pagination-prev]")) go(current - 1)
+      else if (target.closest("[data-pagination-next]")) go(current + 1)
+    })
+  }
+
+  document.addEventListener("astro:page-load", initHomePagination)
+</script>

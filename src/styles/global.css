@@ -596,6 +596,19 @@ html.is-route-loaded .route-progress {
   transform: translateX(-26px) scale(0.96);
 }
 
+/* 主页 JS 分页切到第 2 页起：品牌退场、显示「首页 / N/总页」面包屑 */
+.site-navbar.is-home.is-paged .site-navbar-brand {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-26px) scale(0.96);
+}
+
+.site-navbar.is-home.is-paged .site-navbar-breadcrumb {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(0);
+}
+
 .site-navbar-brand,
 .site-navbar-breadcrumb {
   will-change: opacity, transform;
@@ -861,56 +874,108 @@ main.is-home-feed {
   margin-bottom: 1.75rem;
 }
 
-.home-feed-header h2 {
-  margin: 0;
-  font-family: var(--font-heading);
-  font-size: 1.5rem;
-  font-weight: 600;
-  letter-spacing: -0.015em;
-}
-
-.home-feed-header > div {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0 0.75rem;
-}
-
-/* 胶囊小链接：平时安静，hover 泛起 muted 底色、箭头右滑 */
-.home-feed-archive-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  padding: 0.3rem 0.85rem;
-  border-radius: 999px;
-  color: var(--muted-foreground);
-  font-family: var(--font-mono, ui-monospace, monospace);
-  font-size: 0.8125rem;
-  transition:
-    color 160ms ease,
-    background-color 160ms ease;
-}
-
-.home-feed-archive-link:hover {
-  color: var(--foreground);
-  background-color: var(--muted);
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .home-feed-archive-arrow {
-    transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
-  }
-
-  .home-feed-archive-link:hover .home-feed-archive-arrow {
-    transform: translateX(3px);
-  }
-}
-
 .home-feed-header > p {
   margin: 0;
   color: var(--muted-foreground);
   font-family: var(--font-mono);
   font-size: 0.8125rem;
+}
+
+/* 分页切换的滚动锚点：给固定 navbar 让位 */
+.home-feed-panel {
+  scroll-margin-top: calc(48px + 0.75rem);
+}
+
+/*
+ * 主页分页（Fuwari 式，JS 切换 data-home-timeline-page 容器）：
+ * ‹ [1 2 3 …] ›，当前页实底高亮，箭头到头禁用。
+ */
+.home-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 2.25rem;
+}
+
+.home-pagination-pages {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) * 0.8);
+  background: var(--card);
+  padding: 0.25rem;
+}
+
+.home-pagination-page {
+  display: flex;
+  width: 2.75rem;
+  height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: calc(var(--radius) * 0.6);
+  background: none;
+  color: var(--muted-foreground);
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 150ms ease,
+    color 150ms ease,
+    transform 150ms ease;
+}
+
+.home-pagination-page.is-current {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  cursor: default;
+}
+
+button.home-pagination-page:hover {
+  background: var(--muted);
+  color: var(--foreground);
+}
+
+button.home-pagination-page:active {
+  transform: scale(0.88);
+}
+
+.home-pagination-arrow {
+  display: flex;
+  width: 2.75rem;
+  height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) * 0.8);
+  background: var(--card);
+  color: var(--primary);
+  cursor: pointer;
+  transition:
+    background-color 150ms ease,
+    opacity 150ms ease;
+}
+
+.home-pagination-arrow:not(:disabled):hover {
+  background: var(--muted);
+}
+
+.home-pagination-arrow:disabled {
+  opacity: 0.4;
+  cursor: default;
+  pointer-events: none;
+}
+
+.home-pagination-gap {
+  display: flex;
+  width: 1.75rem;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted-foreground);
+  font-family: var(--font-mono);
 }
 
 @media (max-width: 640px) {
@@ -1204,6 +1269,7 @@ main.is-home-feed {
 }
 
 .post-timeline-cover {
+  position: relative;
   width: 10.5rem;
   height: 6.75rem;
   flex-shrink: 0;
@@ -1215,10 +1281,25 @@ main.is-home-feed {
   margin-top: 0.1rem;
 }
 
+/*
+ * 封面模糊填充：框固定 ~14:9，图片完整显示（contain），比例不符时空缺处
+ * 用放大模糊的自身图填充（截图两侧的文字/信息不再被 cover 裁掉）。
+ * scale 补偿 blur 边缘羽化，避免四周露出底色，与首页横幅同一手法。
+ */
+.post-timeline-cover::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--cover-url) center / cover no-repeat;
+  filter: blur(14px) saturate(1.05);
+  transform: scale(1.15);
+}
+
 .post-timeline-cover-img {
+  position: relative;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   /* 常驻过渡：hover 放大 / 移开回归双向都有动画。
      transform 不触发重绘，切主题无额外开销。 */
   transition: transform 300ms ease;
@@ -1326,39 +1407,54 @@ main.is-archive-page {
   color: var(--muted-foreground);
 }
 
+/*
+ * Fuwari 式归档（参照 blog-fuwari ArchivePanel）：日期 / 虚线轨 / 标题 /
+ * 标签 四列网格。hover 整行浅底高亮、标题右滑变主色、轨上圆点拉长成竖条
+ * （outline 环颜色跟随行底，把虚线「咬断」在点周围）。
+ */
 .post-archive {
+  --archive-row-bg-hover: var(--muted);
+  --archive-row-bg-active: oklch(0.947 0.011 95);
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) * 1.2);
+  background: var(--card);
+  padding: 1.5rem 2rem;
+}
+
+.dark .post-archive {
+  --archive-row-bg-hover: oklch(0.318 0.005 80);
+  --archive-row-bg-active: oklch(0.292 0.004 80);
 }
 
 .post-archive-year-header {
-  display: flex;
+  display: grid;
+  grid-template-columns: 4.25rem 2.25rem minmax(0, 1fr);
   align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 0.35rem;
-  padding-inline: 0.25rem;
+  height: 3.75rem;
 }
 
 .post-archive-year-header h2 {
   margin: 0;
-  min-width: 4.5rem;
   color: var(--foreground);
   font-family: var(--font-heading);
-  font-size: 1.75rem;
-  font-weight: 650;
-  letter-spacing: -0.02em;
+  font-size: 1.5rem;
+  font-weight: 700;
+  text-align: right;
   line-height: 1.1;
 }
 
-/* 年份行的空心大节点：与文章行的实心小点区分层级 */
+/* 年份行的空心主色环：与文章行的实心小点区分层级 */
 .post-archive-year-marker {
-  width: 0.6rem;
-  height: 0.6rem;
+  position: relative;
+  z-index: 1;
+  width: 0.75rem;
+  height: 0.75rem;
   flex-shrink: 0;
-  border: 2px solid
-    color-mix(in oklch, var(--muted-foreground) 55%, transparent);
   border-radius: 999px;
+  outline: 3px solid var(--primary);
+  outline-offset: -2px;
 }
 
 .post-archive-count {
@@ -1375,20 +1471,24 @@ main.is-archive-page {
 }
 
 .post-archive-link {
-  display: flex;
+  display: grid;
+  grid-template-columns: 4.25rem 2.25rem minmax(0, 1fr) auto;
   align-items: center;
-  gap: 0.75rem;
+  height: 2.5rem;
   border-radius: calc(var(--radius) * 0.8);
-  padding: 0.55rem 0.75rem;
   color: inherit;
   text-decoration: none;
   transition:
-    background-color 160ms ease,
-    color 160ms ease;
+    background-color 150ms ease,
+    color 150ms ease;
 }
 
 .post-archive-link:hover {
-  background: color-mix(in oklch, var(--muted) 70%, transparent);
+  background: var(--archive-row-bg-hover);
+}
+
+.post-archive-link:active {
+  background: var(--archive-row-bg-active);
 }
 
 .post-archive-link:focus-visible {
@@ -1397,116 +1497,121 @@ main.is-archive-page {
 }
 
 .post-archive-link time {
-  flex-shrink: 0;
-  min-width: 3.5rem;
-  color: var(--muted-foreground);
+  color: color-mix(in oklch, var(--muted-foreground) 85%, transparent);
   font-family: var(--font-mono);
   font-size: 0.8125rem;
   font-variant-numeric: tabular-nums;
+  text-align: right;
 }
 
-/* 竖向虚线导轨：靠 li 上的贯穿伪元素连成整年一条线 */
-.post-archive-item {
-  position: relative;
-}
-
-.post-archive-item::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: calc(0.75rem + 3.5rem + 0.75rem + 0.3rem);
-  width: 0;
-  border-left: 1px dashed color-mix(in oklch, var(--border) 85%, transparent);
-}
-
+/* 虚线导轨：轨格内伪元素贯穿整行，年份头与文章行共用同一列对齐 */
 .post-archive-rail {
   position: relative;
   z-index: 1;
   display: flex;
-  width: 0.6rem;
-  flex-shrink: 0;
+  height: 100%;
+  align-items: center;
   justify-content: center;
 }
 
+.post-archive-rail::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(50% - 1px);
+  border-left: 2px dashed
+    color-mix(in oklch, var(--foreground) 10%, transparent);
+  pointer-events: none;
+}
+
+/* 圆点morph：静止 4×4 圆点，hover 拉长成 4×20 竖条；outline 环跟随行底色
+ * （静止跟卡片底、hover 跟高亮底、active 跟按下底），在点周围遮住虚线 */
 .post-archive-dot {
-  width: 0.4rem;
-  height: 0.4rem;
+  position: relative;
+  z-index: 1;
+  width: 0.3rem;
+  height: 0.3rem;
   border-radius: 999px;
   background: color-mix(in oklch, var(--muted-foreground) 55%, transparent);
-  box-shadow: 0 0 0 4px var(--background);
-  transition:
-    transform 180ms ease,
-    background-color 180ms ease;
+  outline: 4px solid var(--card);
+  transition: all 150ms ease;
 }
 
 .post-archive-link:hover .post-archive-dot {
+  height: 1.25rem;
   background: var(--primary);
-  transform: scale(1.4);
+  outline-color: var(--archive-row-bg-hover);
 }
 
+.post-archive-link:active .post-archive-dot {
+  outline-color: var(--archive-row-bg-active);
+}
+
+/* 标题格：hover 整格右滑变主色（药丸随行） */
 .post-archive-title {
+  display: flex;
   min-width: 0;
-  flex: 1;
-  overflow: hidden;
+  align-items: center;
+  gap: 0.5rem;
+  color: color-mix(in oklch, var(--foreground) 78%, transparent);
   font-size: 0.9375rem;
-  font-weight: 500;
-  line-height: 1.5;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  transition: color 160ms ease;
+  font-weight: 600;
+  transition: all 150ms ease;
 }
 
 .post-archive-link:hover .post-archive-title {
   color: var(--primary);
+  transform: translateX(0.25rem);
 }
 
-.post-archive-meta {
-  display: flex;
+.post-archive-title-text {
   min-width: 0;
-  flex-shrink: 0;
-  align-items: center;
-  gap: 0.4rem;
-  max-width: 40%;
-}
-
-.post-archive-tags {
   overflow: hidden;
-  color: var(--muted-foreground);
-  font-size: 0.75rem;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-/* 窄屏：保留「日期 · 节点 · 标题」主行；状态提示另起一行，标签让位于标题 */
+/* Fuwari 式状态药丸：着色底 / 边 / 字 */
+.post-archive-pill {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  height: 1.15rem;
+  padding: 0 0.5rem;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.post-archive-pill.is-pinned {
+  border: 1px solid color-mix(in oklch, var(--primary) 20%, transparent);
+  background: color-mix(in oklch, var(--primary) 10%, transparent);
+  color: var(--primary);
+}
+
+.post-archive-pill.is-outdated {
+  border: 1px solid color-mix(in oklch, var(--destructive) 25%, transparent);
+  background: color-mix(in oklch, var(--destructive) 10%, transparent);
+  color: var(--destructive);
+}
+
+.post-archive-tags {
+  min-width: 0;
+  max-width: 30%;
+  overflow: hidden;
+  color: color-mix(in oklch, var(--muted-foreground) 60%, transparent);
+  font-size: 0.75rem;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 窄屏：标签列隐藏，主行严格单行省略（Fuwari 式） */
 @media (max-width: 640px) {
-  .post-archive-link {
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    padding-inline: 0.5rem;
-  }
-
-  .post-archive-item::before {
-    left: calc(0.5rem + 3.25rem + 0.5rem + 0.3rem);
-  }
-
-  .post-archive-link time {
-    min-width: 3.25rem;
-  }
-
-  .post-archive-title {
-    flex: 1 1 calc(100% - 4.85rem);
-    display: -webkit-box;
-    overflow: hidden;
-    white-space: normal;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-  }
-
-  .post-archive-meta {
-    flex: 1 0 100%;
-    max-width: none;
-    padding-left: calc(3.25rem + 1.1rem);
+  .post-archive {
+    padding: 1rem 0.75rem;
   }
 
   .post-archive-tags {
@@ -1514,8 +1619,7 @@ main.is-archive-page {
   }
 
   .post-archive-year-header h2 {
-    font-size: 1.5rem;
-    min-width: 3.75rem;
+    font-size: 1.25rem;
   }
 }
 

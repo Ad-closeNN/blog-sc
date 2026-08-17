@@ -1,6 +1,7 @@
 ---
+import BackToPostsBar from "@/components/BackToPostsBar.astro"
 import PostArchive from "@/components/PostArchive.astro"
-import { site } from "@/config"
+import { navigation, site } from "@/config"
 import BaseLayout from "@/layouts/BaseLayout.astro"
 import { getPosts } from "@/lib/posts"
 
@@ -38,6 +39,8 @@ const jsonLd = {
   mainClass="is-archive-page"
   breadcrumbLabel="归档"
 >
+  <BackToPostsBar href={navigation.home.href} label="返回首页" />
+
   <section class="archive-page-header">
     <div class="archive-page-heading">
       <h1>归档</h1>

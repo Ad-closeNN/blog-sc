@@ -1,5 +1,4 @@
 ---
-import { Badge } from "@/components/ui/badge"
 import {
   formatShortDate,
   groupPostsByYear,
@@ -27,7 +26,9 @@ const groups = groupPostsByYear(posts)
         >
           <header class="post-archive-year-header">
             <h2 id={`archive-year-${group.year}`}>{group.year}</h2>
-            <span class="post-archive-year-marker" aria-hidden="true" />
+            <span class="post-archive-rail" aria-hidden="true">
+              <span class="post-archive-year-marker" />
+            </span>
             <span class="post-archive-count">{group.posts.length} 篇</span>
           </header>
 
@@ -41,20 +42,20 @@ const groups = groupPostsByYear(posts)
                   <span class="post-archive-rail" aria-hidden="true">
                     <span class="post-archive-dot" />
                   </span>
-                  <span class="post-archive-title">{post.data.title}</span>
-                  <span class="post-archive-meta">
+                  <span class="post-archive-title">
                     {post.data.pinned && (
-                      <Badge variant="secondary">置顶</Badge>
+                      <span class="post-archive-pill is-pinned">置顶</span>
                     )}
                     {post.data.outdated && (
-                      <Badge variant="destructive">已失效</Badge>
+                      <span class="post-archive-pill is-outdated">已失效</span>
                     )}
-                    {post.data.tags.length > 0 && (
-                      <span class="post-archive-tags">
-                        {post.data.tags.map((tag) => `#${tag}`).join(" ")}
-                      </span>
-                    )}
+                    <span class="post-archive-title-text">{post.data.title}</span>
                   </span>
+                  {post.data.tags.length > 0 && (
+                    <span class="post-archive-tags">
+                      {post.data.tags.map((tag) => `#${tag}`).join(" ")}
+                    </span>
+                  )}
                 </a>
               </li>
             ))}

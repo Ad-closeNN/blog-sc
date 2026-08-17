@@ -1,14 +1,24 @@
 ---
+import HomePagination from "@/components/HomePagination.astro"
 import PostTimeline from "@/components/PostTimeline.astro"
 import SidebarStats from "@/components/SidebarStats"
 import TaxonomyPanel from "@/components/TaxonomyPanel.astro"
-import { links, navigation, profile, site } from "@/config"
+import { links, profile, site } from "@/config"
 import BaseLayout from "@/layouts/BaseLayout.astro"
-import { getPosts } from "@/lib/posts"
-import { ArrowRightIcon } from "lucide-react"
+import { getBuildCommit } from "@/lib/build-commit"
+import { HOME_PAGE_SIZE, getPosts } from "@/lib/posts"
 
 const posts = await getPosts()
+const buildCommit = getBuildCommit()
 const summary = posts.length > 0 ? `共 ${posts.length} 篇文章` : "还没有文章"
+
+// Fuwari 式 JS 分页：全部页的卡片元数据都进初始 HTML（无正文，SEO 无损），
+// 页码切换由脚本切换 data-home-timeline-page 容器显示，不产生路由跳转
+const chunks = Array.from(
+  { length: Math.max(Math.ceil(posts.length / HOME_PAGE_SIZE), 1) },
+  (_, i) => posts.slice(i * HOME_PAGE_SIZE, (i + 1) * HOME_PAGE_SIZE)
+)
+const totalPages = chunks.length
 
 const jsonLd = {
   "@type": "WebSite",
@@ -70,31 +80,32 @@ const jsonLd = {
     </div>
   </section>
 
-  <section class="home-feed-panel" aria-labelledby="home-feed-title">
+  <section
+    class="home-feed-panel"
+    aria-label="文章列表"
+    data-home-feed-panel
+  >
     <header class="home-feed-header">
-      <div>
-        <h2 id="home-feed-title">文章列表</h2>
-        <a class="home-feed-archive-link" href={navigation.posts.href}>
-          归档
-          <ArrowRightIcon
-            className="home-feed-archive-arrow"
-            aria-hidden="true"
-            width="14"
-            height="14"
-          />
-        </a>
-      </div>
       <p>{summary}</p>
     </header>
 
     <div class="posts-layout-grid">
       <div class="posts-layout-main">
-        <PostTimeline posts={posts} />
+        {chunks.map((chunk, i) => (
+          <div
+            class="home-timeline-page"
+            data-home-timeline-page={i + 1}
+            hidden={i > 0}
+          >
+            <PostTimeline posts={chunk} />
+          </div>
+        ))}
+        <HomePagination currentPage={1} totalPages={totalPages} />
       </div>
       <aside class="posts-layout-right" aria-label="侧栏">
         <div class="flex flex-col gap-6">
           <TaxonomyPanel posts={posts} />
-          <SidebarStats client:load />
+          <SidebarStats client:load commit={buildCommit} />
         </div>
       </aside>
     </div>

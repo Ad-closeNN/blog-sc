@@ -2,6 +2,9 @@ import { getCollection, type CollectionEntry } from "astro:content"
 
 export type Post = CollectionEntry<"posts">
 
+/** 主页文章列表每页条数（Fuwari 式 JS 分页） */
+export const HOME_PAGE_SIZE = 8
+
 export function publicPath(src?: string | null) {
   if (!src) return ""
   return src.startsWith("/public/") ? src.slice("/public".length) : src
