@@ -1,12 +1,13 @@
 /**
  * 同页原地筛选共享逻辑：
- * - 点击筛选按钮 → 过滤 .post-timeline-item、隐藏空月份组、合并同月折叠组、高亮匹配 Tag Badge
+ * - 点击筛选按钮 → 标记不匹配文章、隐藏空月份组、高亮匹配 Tag
  * - 筛选状态写入 URL（?tag= / ?cat=），刷新/分享可恢复
  * - 支持 tag 与分类「同时选中」做 AND 交集：每类参数各自独立一值，
  *   选出同时满足所有已选维度的文章；再次点击某维度已选项 → 仅取消该维度
  *
- * 供 TimelineFilter.astro（/tags/ /categories/ 页）与 TaxonomyPanel（/posts/ 页）复用。
- * 仅在浏览器端执行（由 Astro <script> 打包），SSR 不运行。
+ * 供 TimelineFilter.astro（/tags/ /categories/ 页）与 TaxonomyPanel（首页）复用。
+ * 首页存在 HomePagination 时，筛选器只写 data-filter-hidden，分页器监听事件后
+ * 从第 1 页按筛选结果重新切片；其它页面仍由本模块直接控制 item.hidden。
  */
 
 import { prefersReducedMotion } from "@/lib/scroll-to-heading"
@@ -72,9 +73,8 @@ export function initTimelineFilter({
   const groups = [
     ...document.querySelectorAll<HTMLElement>(".post-timeline-month"),
   ]
-  const expandBtn = document.querySelector<HTMLElement>("[data-timeline-expand]")
-  const remaining = document.querySelector<HTMLElement>(
-    "[data-timeline-remaining]"
+  const homePagination = document.querySelector<HTMLElement>(
+    "[data-home-pagination]"
   )
 
   /** 单维度匹配：value 为 "*"（未选）时视为通过 */
@@ -93,34 +93,18 @@ export function initTimelineFilter({
     return true
   }
 
-  function mergeDuplicateMonths() {
-    const months = new Map<string, HTMLElement>()
-    for (const group of groups) {
-      if (group.hidden) continue
-      const title = group.querySelector(".post-timeline-month-title")
-      // 只取月份名 span，避免把计数 span 混进 key
-      const monthName = title?.firstElementChild?.textContent?.trim() ?? ""
-      const existing = months.get(monthName)
-      if (existing && existing !== group) {
-        // 把后一个组的可见 items 移到前一个组，再隐藏后组
-        group
-          .querySelectorAll(".post-timeline-item:not([hidden])")
-          .forEach((item) => {
-            existing.querySelector(".post-timeline-list")?.appendChild(item)
-          })
-        // 重算合并后组的计数
-        const count = existing.querySelectorAll(
-          ".post-timeline-item:not([hidden])"
-        ).length
-        const countEl = existing.querySelector(
-          ".post-timeline-month-title span.opacity-60"
-        )
-        if (countEl) countEl.textContent = `(${count})`
-        group.hidden = true
-      } else {
-        months.set(monthName, group)
-      }
-    }
+  function updateGroups() {
+    groups.forEach((group) => {
+      // 只看筛选状态，不把首页分页暂时隐藏的文章误算为筛选结果不存在。
+      const visibleCount = group.querySelectorAll(
+        ".post-timeline-item:not([data-filter-hidden])"
+      ).length
+      group.hidden = visibleCount === 0
+      const countEl = group.querySelector(
+        ".post-timeline-month-title span.opacity-60"
+      )
+      if (countEl) countEl.textContent = `(${visibleCount})`
+    })
   }
 
   function apply(value: string) {
@@ -149,48 +133,35 @@ export function initTimelineFilter({
     // 返回时 Astro 无法恢复过渡状态 → URL 是列表页但渲染的是文章页内容。
     history.replaceState(history.state, "", url)
 
-    const isAll = activeFilters.size === 0
-    // 筛选时展开折叠区，让全部文章可被过滤
-    if (!isAll && remaining) {
-      remaining.hidden = false
-      if (expandBtn) expandBtn.hidden = true
-    }
-    if (isAll && remaining) {
-      remaining.hidden = true
-      if (expandBtn) expandBtn.hidden = false
-      expandBtn?.setAttribute("aria-expanded", "false")
-    }
-
     items.forEach((item) => {
-      item.hidden = !matches(item)
+      const hidden = !matches(item)
+      item.toggleAttribute("data-filter-hidden", hidden)
+      // 非首页分页页没有分页控制器，直接更新原有 hidden 状态。
+      if (!homePagination) item.hidden = hidden
     })
 
-    // 高亮文章卡片里与当前筛选 Tag 对应的 Badge 边框
-    // 仅标签筛选维度生效时高亮匹配项；否则清空
+    // 高亮文章卡片里与当前筛选 Tag 对应的标签。
+    // 仅标签筛选维度生效时高亮匹配项；否则清空。
     const activeTag = activeFilters.get("tag")
     document
       .querySelectorAll<HTMLElement>("[data-filter-tag]")
-      .forEach((badge) => {
+      .forEach((tag) => {
         const on =
           activeTag != null &&
-          badge.getAttribute("data-filter-tag") === activeTag
-        badge.classList.toggle("is-filter-active", on)
+          tag.getAttribute("data-filter-tag") === activeTag
+        tag.classList.toggle("is-filter-active", on)
       })
 
-    // 隐藏空月份组，更新组计数
-    groups.forEach((group) => {
-      const visibleCount = group.querySelectorAll(
-        ".post-timeline-item:not([hidden])"
-      ).length
-      group.hidden = visibleCount === 0
-      const countEl = group.querySelector(
-        ".post-timeline-month-title span.opacity-60"
-      )
-      if (countEl) countEl.textContent = `(${visibleCount})`
-    })
+    updateGroups()
 
-    // 折叠区与首屏同月会相邻成两组：筛选时合并同名月份组
-    if (!isAll) mergeDuplicateMonths()
+    // 首页分页器接手 item.hidden：收到事件后从第 1 页按结果集重新分页。
+    if (homePagination) {
+      document.dispatchEvent(
+        new CustomEvent("timeline-filter:changed", {
+          detail: { isAll: activeFilters.size === 0 },
+        })
+      )
+    }
   }
 
   buttons.forEach((btn) => {
@@ -202,8 +173,8 @@ export function initTimelineFilter({
       } else {
         apply(value)
       }
-      // 结果集变化后把列表顶部带回视口（仅用户点击时，URL 恢复不滚）
-      scrollTimelineIntoView()
+      // 首页分页器会平滑回到页面顶部；其它页面保留原先的列表定位行为。
+      if (!homePagination) scrollTimelineIntoView()
     })
   })
 

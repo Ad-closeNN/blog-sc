@@ -1,5 +1,6 @@
 ---
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
+import { HOME_PAGE_SIZE } from "@/lib/posts"
 
 type Props = {
   currentPage: number
@@ -42,7 +43,12 @@ if (r < totalPages) pages.push(totalPages)
 
 {
   totalPages > 1 && (
-    <nav class="home-pagination" aria-label="文章分页" data-home-pagination>
+    <nav
+      class="home-pagination"
+      aria-label="文章分页"
+      data-home-pagination
+      data-page-size={HOME_PAGE_SIZE}
+    >
       <button
         type="button"
         class="home-pagination-arrow"
@@ -131,12 +137,15 @@ if (r < totalPages) pages.push(totalPages)
 
   function initHomePagination() {
     const root = document.querySelector<HTMLElement>("[data-home-pagination]")
-    const containers = [
-      ...document.querySelectorAll<HTMLElement>("[data-home-timeline-page]"),
-    ]
-    if (!root || containers.length < 2) return
+    if (!root) return
 
-    const totalPages = containers.length
+    const pageSize = Number(root.dataset.pageSize) || 8
+    const items = [
+      ...document.querySelectorAll<HTMLElement>(".post-timeline-item"),
+    ]
+    const groups = [
+      ...document.querySelectorAll<HTMLElement>(".post-timeline-month"),
+    ]
     const pagesEl = root.querySelector<HTMLElement>("[data-pagination-pages]")
     const prevBtn = root.querySelector<HTMLButtonElement>(
       "[data-pagination-prev]"
@@ -156,33 +165,74 @@ if (r < totalPages) pages.push(totalPages)
 
     let current = 1
 
-    const apply = () => {
-      containers.forEach((el) => {
-        el.hidden = Number(el.dataset.homeTimelinePage) !== current
+    /** 月份组仅按当前分页实际展示的文章显示，计数同步当前页。 */
+    const updateGroups = () => {
+      groups.forEach((group) => {
+        const visibleCount = group.querySelectorAll(
+          ".post-timeline-item:not([hidden])"
+        ).length
+        group.hidden = visibleCount === 0
+        const countEl = group.querySelector(
+          ".post-timeline-month-title span.opacity-60"
+        )
+        if (countEl) countEl.textContent = `(${visibleCount})`
       })
-      pagesEl.innerHTML = renderPages(current, totalPages)
+    }
+
+    /**
+     * 基于未被筛选器标记的文章重新分页。
+     * 筛选器只设置 data-filter-hidden；这里是唯一负责 item.hidden 的地方，
+     * 从而避免分页切换把已筛掉的文章重新显示出来。
+     */
+    const apply = () => {
+      const filteredItems = items.filter(
+        (item) => !item.hasAttribute("data-filter-hidden")
+      )
+      const actualTotal = Math.ceil(filteredItems.length / pageSize)
+      const pageTotal = Math.max(actualTotal, 1)
+      current = Math.min(Math.max(current, 1), pageTotal)
+      const start = (current - 1) * pageSize
+      const currentItems = new Set(filteredItems.slice(start, start + pageSize))
+
+      items.forEach((item) => {
+        item.hidden =
+          item.hasAttribute("data-filter-hidden") || !currentItems.has(item)
+      })
+
+      updateGroups()
+      root.hidden = actualTotal <= 1
+      pagesEl.innerHTML = renderPages(current, pageTotal)
       prevBtn.disabled = current <= 1
-      nextBtn.disabled = current >= totalPages
-      // 第 2 页起：navbar 切到「首页 / N/总页」面包屑，回第 1 页恢复品牌
+      nextBtn.disabled = current >= pageTotal
+
+      // 第 2 页起：navbar 切到「首页 / N/总页」面包屑，回第 1 页恢复品牌。
       if (navbar && indicator && homeCrumbs) {
-        navbar.classList.toggle("is-paged", current > 1)
-        homeCrumbs.setAttribute("aria-hidden", current > 1 ? "false" : "true")
-        indicator.textContent = `${current}/${totalPages}`
+        navbar.classList.toggle("is-paged", actualTotal > 1 && current > 1)
+        homeCrumbs.setAttribute(
+          "aria-hidden",
+          actualTotal > 1 && current > 1 ? "false" : "true"
+        )
+        indicator.textContent = `${current}/${pageTotal}`
       }
     }
 
-    const go = (page: number) => {
-      const target = Math.min(Math.max(page, 1), totalPages)
-      if (target === current) return
-      current = target
-      apply()
+    const scrollToTop = () => {
       const reduced = window.matchMedia(
         "(prefers-reduced-motion: reduce)"
       ).matches
-      window.scrollTo({
-        top: 0,
-        behavior: reduced ? "auto" : "smooth",
-      })
+      window.scrollTo({ top: 0, behavior: reduced ? "auto" : "smooth" })
+    }
+
+    const go = (page: number) => {
+      const filteredCount = items.filter(
+        (item) => !item.hasAttribute("data-filter-hidden")
+      ).length
+      const pageTotal = Math.max(Math.ceil(filteredCount / pageSize), 1)
+      const target = Math.min(Math.max(page, 1), pageTotal)
+      if (target === current) return
+      current = target
+      apply()
+      scrollToTop()
     }
 
     root.addEventListener("click", (event) => {
@@ -195,6 +245,15 @@ if (r < totalPages) pages.push(totalPages)
       if (target.closest("[data-pagination-prev]")) go(current - 1)
       else if (target.closest("[data-pagination-next]")) go(current + 1)
     })
+
+    // Tag / 分类变化后：以新的结果集从第 1 页重新分页，不能留在原第 N 页容器。
+    document.addEventListener("timeline-filter:changed", () => {
+      current = 1
+      apply()
+      scrollToTop()
+    })
+
+    apply()
   }
 
   document.addEventListener("astro:page-load", initHomePagination)

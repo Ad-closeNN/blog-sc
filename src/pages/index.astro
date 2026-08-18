@@ -17,14 +17,9 @@ import {
 const posts = await getPosts()
 const buildCommit = getBuildCommit()
 const summary = posts.length > 0 ? `共 ${posts.length} 篇文章` : "还没有文章"
-
-// Fuwari 式 JS 分页：全部页的卡片元数据都进初始 HTML（无正文，SEO 无损），
-// 页码切换由脚本切换 data-home-timeline-page 容器显示，不产生路由跳转
-const chunks = Array.from(
-  { length: Math.max(Math.ceil(posts.length / HOME_PAGE_SIZE), 1) },
-  (_, i) => posts.slice(i * HOME_PAGE_SIZE, (i + 1) * HOME_PAGE_SIZE)
-)
-const totalPages = chunks.length
+// Fuwari 式 JS 分页：文章卡片完整进入初始 HTML（无正文，SEO 无损），
+// 客户端按当前筛选结果动态切页，筛选后可从第 1 页重新分页。
+const totalPages = Math.max(Math.ceil(posts.length / HOME_PAGE_SIZE), 1)
 
 const homeBannerIcons = {
   "map-pin": MapPinIcon,
@@ -118,15 +113,7 @@ const jsonLd = {
 
     <div class="posts-layout-grid">
       <div class="posts-layout-main">
-        {chunks.map((chunk, i) => (
-          <div
-            class="home-timeline-page"
-            data-home-timeline-page={i + 1}
-            hidden={i > 0}
-          >
-            <PostTimeline posts={chunk} />
-          </div>
-        ))}
+        <PostTimeline posts={posts} />
         <HomePagination currentPage={1} totalPages={totalPages} />
       </div>
       <aside class="posts-layout-right" aria-label="侧栏">
