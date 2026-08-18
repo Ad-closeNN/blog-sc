@@ -11,6 +11,11 @@ export const site = {
   homeBanner: {
     src: "/images/banner.webp",
     position: "center",
+    badge: {
+      label: "穿山景区",
+      href: "https://www.google.com/maps?q=25.251747,110.297180",
+      icon: "map-pin",
+    },
   },
   copyright: "© 2025-present Ad_closeNN.",
   // owner/repo 格式，非完整 URL；使用处拼 https://github.com/${githubRepo}
@@ -19,7 +24,7 @@ export const site = {
 
 export const navigation = {
   home: { label: "首页", href: "/" },
-  posts: { label: "归档", href: "/posts/" },
+  posts: { label: "文章", href: "/posts/" },
   friends: { label: "友链", href: "/friends/" },
 } as const
 

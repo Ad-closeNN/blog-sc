@@ -69,13 +69,6 @@ const ariaLabel = type === "tags" ? "按标签筛选" : "按分类筛选"
     border-color: var(--foreground);
     color: var(--background);
   }
-
-  /* 筛选高亮：文章卡片里与当前筛选 Tag 对应的 Badge 加边框 */
-  .post-timeline-badge.is-filter-active {
-    border-color: var(--foreground);
-    color: var(--foreground);
-    background: color-mix(in oklch, var(--foreground) 10%, transparent);
-  }
 </style>
 
 <script>

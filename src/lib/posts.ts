@@ -185,6 +185,11 @@ export function countWordsInMarkdown(md: string): number {
   return cjk + latin
 }
 
+/** 中文阅读速度约 400 字/分钟，不足 1 分钟按 1 分钟计 */
+export function readingMinutes(words: number): number {
+  return Math.max(1, Math.round(words / 400))
+}
+
 let totalWordsCache: number | undefined
 
 export async function getTotalWords(): Promise<number> {

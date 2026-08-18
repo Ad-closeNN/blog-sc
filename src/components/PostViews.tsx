@@ -1,3 +1,4 @@
+import { EyeIcon } from "lucide-react"
 import { useEffect, useState } from "react"
 
 type Props = {
@@ -18,7 +19,7 @@ type BlogUmamiStore = {
 
 /**
  * 单篇文章浏览量（Umami）。
- * 显示于文章页 eyebrow meta 行：`· N 浏览量`。
+ * 显示于文章页 meta 行，前置 EyeIcon 由 PostMeta.astro 提供，故此处不带分隔符。
  * umami 未启用 / 请求失败 / 无数据 → 返回 null 不显示任何内容。
  * 与 SidebarStats 共用 BaseLayout 注入的 window.__blogUmami store。
  */
@@ -81,8 +82,9 @@ export default function PostViews({ path }: Props) {
   if (target === null) return null
 
   return (
-    <span className="post-views ml-2">
-      · <span className="tabular-nums">{display.toLocaleString("zh-CN")}</span>{" "}
+    <span className="post-views post-meta-item">
+      <EyeIcon className="post-meta-icon" aria-hidden="true" />
+      <span className="tabular-nums">{display.toLocaleString("zh-CN")}</span>{" "}
       浏览量
     </span>
   )

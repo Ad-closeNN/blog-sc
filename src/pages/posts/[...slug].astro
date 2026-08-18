@@ -1,6 +1,6 @@
 ---
 import BackToPostsBar from "@/components/BackToPostsBar.astro"
-import PostViews from "@/components/PostViews"
+import PostMeta from "@/components/PostMeta.astro"
 import SidebarStats from "@/components/SidebarStats"
 import { Badge } from "@/components/ui/badge"
 import { buttonVariants } from "@/components/ui/button"
@@ -10,7 +10,6 @@ import BaseLayout from "@/layouts/BaseLayout.astro"
 import { getBuildCommit } from "@/lib/build-commit"
 import {
   countWordsInMarkdown,
-  formatDate,
   getPosts,
   postDescription,
   postHref,
@@ -19,7 +18,12 @@ import {
   type Post,
 } from "@/lib/posts"
 import { cn } from "@/lib/utils"
-import { ArrowLeftIcon, ArrowRightIcon, SparklesIcon } from "lucide-react"
+import {
+  ArrowLeftIcon,
+  ArrowRightIcon,
+  SparklesIcon,
+  TagIcon,
+} from "lucide-react"
 import { render } from "astro:content"
 
 export async function getStaticPaths() {
@@ -38,14 +42,14 @@ type Props = {
 
 const { post, prev, next } = Astro.props
 const { Content, headings } = await render(post)
-const published = formatDate(post.data.published)
-const updated = post.data.updated ? formatDate(post.data.updated) : null
 const cover = publicPath(
   post.data.customcover ||
     (post.data.showcover !== false ? post.data.image : "")
 )
 const buildCommit = getBuildCommit()
 const tags = post.data.tags
+// 字数：meta 行与 jsonLd 的 wordCount 共用，避免扫两遍 markdown
+const words = countWordsInMarkdown(post.body ?? "")
 const navBtn = buttonVariants({
   variant: "outline",
   className:
@@ -66,7 +70,7 @@ const jsonLd = [
     url: articleUrl,
     mainEntityOfPage: articleUrl,
     inLanguage: site.language,
-    wordCount: countWordsInMarkdown(post.body ?? ""),
+    wordCount: words,
     image: cover ? `${site.url}${cover}` : undefined,
     author: {
       "@type": "Person",
@@ -126,21 +130,7 @@ const jsonLd = [
         <BackToPostsBar href={navigation.home.href} label="返回首页" />
 
         <header class="article-header mb-7">
-          <p class="eyebrow">
-            <time datetime={post.data.published.toISOString()}>{published}</time
-            >
-            {
-              updated && updated !== published && (
-                <span class="ml-2">· 更新于 {updated}</span>
-              )
-            }
-            {
-              post.data.category && (
-                <span class="ml-2">· {post.data.category}</span>
-              )
-            }
-            <PostViews client:load path={postHref(post.id)} />
-          </p>
+          <PostMeta post={post} variant="article" words={words} />
           <h1
             class="m-0 font-heading text-[clamp(1.75rem,4vw,2.35rem)] leading-tight font-semibold tracking-tight"
           >
@@ -152,11 +142,21 @@ const jsonLd = [
             )
           }
 
-          <div class="mt-4 flex flex-wrap gap-2">
+          <div class="article-header-badges">
             {post.data.pinned && <Badge variant="secondary">置顶</Badge>}
             {post.data.outdated && <Badge variant="destructive">已失效</Badge>}
-            {tags.map((tag) => <Badge variant="outline">{tag}</Badge>)}
           </div>
+
+          {
+            tags.length > 0 && (
+              <div class="post-timeline-tags mt-3">
+                <TagIcon className="post-meta-icon" aria-hidden="true" />
+                {tags.map((tag) => (
+                  <span class="post-timeline-tag">{tag}</span>
+                ))}
+              </div>
+            )
+          }
 
           {
             post.data.aiSummary && (

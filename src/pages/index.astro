@@ -7,6 +7,12 @@ import { links, profile, site } from "@/config"
 import BaseLayout from "@/layouts/BaseLayout.astro"
 import { getBuildCommit } from "@/lib/build-commit"
 import { HOME_PAGE_SIZE, getPosts } from "@/lib/posts"
+import {
+  CameraIcon,
+  ExternalLinkIcon,
+  LandmarkIcon,
+  MapPinIcon,
+} from "lucide-react"
 
 const posts = await getPosts()
 const buildCommit = getBuildCommit()
@@ -19,6 +25,16 @@ const chunks = Array.from(
   (_, i) => posts.slice(i * HOME_PAGE_SIZE, (i + 1) * HOME_PAGE_SIZE)
 )
 const totalPages = chunks.length
+
+const homeBannerIcons = {
+  "map-pin": MapPinIcon,
+  camera: CameraIcon,
+  landmark: LandmarkIcon,
+} as const
+const HomeBannerIcon =
+  homeBannerIcons[
+    site.homeBanner.badge.icon as keyof typeof homeBannerIcons
+  ] ?? MapPinIcon
 
 const jsonLd = {
   "@type": "WebSite",
@@ -78,6 +94,17 @@ const jsonLd = {
       <h1 id="home-profile-name">{site.name}</h1>
       <p>{profile.bio}</p>
     </div>
+    <a
+      class="home-banner-badge"
+      href={site.homeBanner.badge.href}
+      target="_blank"
+      rel="noreferrer"
+      aria-label={`在新标签页打开 ${site.homeBanner.badge.label} 的地图位置`}
+    >
+      <HomeBannerIcon className="size-3.5" aria-hidden="true" />
+      <span>{site.homeBanner.badge.label}</span>
+      <ExternalLinkIcon className="size-3" aria-hidden="true" />
+    </a>
   </section>
 
   <section

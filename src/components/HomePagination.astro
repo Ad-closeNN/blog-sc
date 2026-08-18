@@ -144,7 +144,6 @@ if (r < totalPages) pages.push(totalPages)
     const nextBtn = root.querySelector<HTMLButtonElement>(
       "[data-pagination-next]"
     )
-    const anchor = document.querySelector<HTMLElement>("[data-home-feed-panel]")
     if (!pagesEl || !prevBtn || !nextBtn) return
 
     const navbar = document.querySelector(".site-navbar")
@@ -180,9 +179,9 @@ if (r < totalPages) pages.push(totalPages)
       const reduced = window.matchMedia(
         "(prefers-reduced-motion: reduce)"
       ).matches
-      anchor?.scrollIntoView({
+      window.scrollTo({
+        top: 0,
         behavior: reduced ? "auto" : "smooth",
-        block: "start",
       })
     }
 

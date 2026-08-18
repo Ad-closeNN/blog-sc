@@ -1,13 +1,15 @@
 ---
+import PostMeta from "@/components/PostMeta.astro"
 import { Badge } from "@/components/ui/badge"
 import {
-  formatShortDate,
+  countWordsInMarkdown,
   getPostCover,
   groupPostsByMonth,
   postHref,
   taxonomySlug,
   type Post,
 } from "@/lib/posts"
+import { TagIcon } from "lucide-react"
 
 type Props = {
   posts: Post[]
@@ -46,8 +48,8 @@ const groups = groupPostsByMonth(posts)
             <ul class="post-timeline-list m-0 list-none p-0">
               {group.posts.map((post) => {
                 const href = postHref(post.id)
-                const date = formatShortDate(post.data.published)
                 const cover = getPostCover(post)
+                const words = countWordsInMarkdown(post.body ?? "")
                 return (
                   <li
                     class="post-timeline-item group"
@@ -77,23 +79,13 @@ const groups = groupPostsByMonth(posts)
                         </div>
                       )}
                       <div class="post-timeline-card-content">
-                        <div class="flex flex-wrap items-center gap-2">
-                          <time
-                            class="post-timeline-date font-mono text-xs font-medium tracking-wide"
-                            datetime={post.data.published.toISOString()}
-                          >
-                            {date}
-                          </time>
+                        <div class="post-timeline-meta-row">
+                          <PostMeta post={post} variant="card" words={words} />
                           {post.data.pinned && (
                             <Badge variant="secondary">置顶</Badge>
                           )}
                           {post.data.outdated && (
                             <Badge variant="destructive">已失效</Badge>
-                          )}
-                          {post.data.category && (
-                            <Badge variant="outline">
-                              {post.data.category}
-                            </Badge>
                           )}
                         </div>
                         <h3 class="post-timeline-title m-0 text-base leading-snug font-semibold">
@@ -105,15 +97,18 @@ const groups = groupPostsByMonth(posts)
                           </p>
                         )}
                         {post.data.tags.length > 0 && (
-                          <div class="flex flex-wrap gap-1.5 pt-0.5">
+                          <div class="post-timeline-tags">
+                            <TagIcon
+                              className="post-meta-icon"
+                              aria-hidden="true"
+                            />
                             {post.data.tags.map((tag) => (
-                              <Badge
-                                variant="secondary"
-                                className="post-timeline-badge text-[11px] font-normal text-muted-foreground opacity-90"
+                              <span
+                                class="post-timeline-tag"
                                 data-filter-tag={taxonomySlug(tag)}
                               >
-                                #{tag}
-                              </Badge>
+                                {tag}
+                              </span>
                             ))}
                           </div>
                         )}

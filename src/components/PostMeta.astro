@@ -1,0 +1,83 @@
+---
+import PostViews from "@/components/PostViews"
+import {
+  formatDate,
+  formatShortDate,
+  postHref,
+  readingMinutes,
+  type Post,
+} from "@/lib/posts"
+import {
+  CalendarIcon,
+  ClockIcon,
+  FileTextIcon,
+  FolderIcon,
+  RotateCwIcon,
+} from "lucide-react"
+
+type Props = {
+  post: Post
+  /** card: 首页卡片（短日期、无更新时间、无浏览量）；article: 文章页（全量） */
+  variant: "card" | "article"
+  /** 正文字数，由调用方传入（避免在此重复扫 markdown） */
+  words?: number
+}
+
+const { post, variant, words } = Astro.props
+const isArticle = variant === "article"
+
+const published = post.data.published
+const publishedText = isArticle ? formatDate(published) : formatShortDate(published)
+const updated = post.data.updated
+// 仅当确有更新且与发布日不同一天时才显示，避免「发布=更新」的噪音
+const updatedText =
+  isArticle && updated && formatDate(updated) !== formatDate(published)
+    ? formatDate(updated)
+    : null
+const minutes = words ? readingMinutes(words) : null
+---
+
+<div class:list={["post-meta", isArticle && "is-article"]}>
+  <span class="post-meta-item">
+    <CalendarIcon className="post-meta-icon" aria-hidden="true" />
+    <time datetime={published.toISOString()}>{publishedText}</time>
+  </span>
+
+  {
+    updatedText && (
+      <span class="post-meta-item">
+        <RotateCwIcon className="post-meta-icon" aria-hidden="true" />
+        <span class="sr-only">更新于</span>
+        <time datetime={updated!.toISOString()}>{updatedText}</time>
+      </span>
+    )
+  }
+
+  {
+    post.data.category && (
+      <span class="post-meta-item">
+        <FolderIcon className="post-meta-icon" aria-hidden="true" />
+        <span>{post.data.category}</span>
+      </span>
+    )
+  }
+
+  {
+    words != null && words > 0 && (
+      <>
+        <span class="post-meta-item is-secondary">
+          <FileTextIcon className="post-meta-icon" aria-hidden="true" />
+          <span><span class="tabular-nums">{words.toLocaleString("zh-CN")}</span> 字</span>
+        </span>
+        <span class="post-meta-item is-secondary">
+          <ClockIcon className="post-meta-icon" aria-hidden="true" />
+          <span>{minutes} 分钟</span>
+        </span>
+      </>
+    )
+  }
+
+  {
+    isArticle && <PostViews client:load path={postHref(post.id)} />
+  }
+</div>
