@@ -1,0 +1,6 @@
+# public/pic 图片允许名单
+# 每行填写一个相对 public/pic/ 的精确路径，例如：
+# legacy-cover.png
+# /pic/runtime-banner.webp
+#
+# 这里用于保留未在 src/content/posts/ 中出现、但由其他页面、运行时逻辑或未来文章使用的图片。

@@ -13,7 +13,12 @@
     "astro": "astro",
     "lint": "eslint .",
     "format": "prettier --write \"**/*.{ts,tsx,astro}\"",
-    "typecheck": "astro check"
+    "typecheck": "astro check",
+    "summary": "node scripts/summary.js",
+    "summary:all": "node scripts/summary.js --all",
+    "summary:force": "node scripts/summary.js --all --force",
+    "images:check": "node scripts/clean-unused-pictures.js",
+    "images:clean": "node scripts/clean-unused-pictures.js --delete"
   },
   "dependencies": {
     "@astrojs/markdown-remark": "^7.2.1",
