@@ -1,0 +1,82 @@
+---
+import { giscusConfig } from "@/config"
+
+/**
+ * Giscus 评论区。
+ *
+ * blog-sc 启用了 ClientRouter（View Transitions），裸 <script src=client.js>
+ * 仅首屏执行一次，客户端切页不会重载——所以这里手动在 astro:page-load 重建。
+ *
+ * - installKey + astro:page-load：绑定一次、跨页存活，每次切页清空容器后重建，
+ *   避免重复执行堆积 iframe。模式参照 BaseLayout.astro 的 navbar 脚本。
+ * - define:vars 注入 giscusConfig：is:inline 不做插值，直接引用会运行时报错
+ *   （参照 BaseLayout.astro 的 umami store 脚本）。
+ * - data-theme 跟随站点 .dark：初始读 class，切换由 theme.ts 派发的
+ *   blog:theme-change 事件触发 postMessage（setConfig），无需重载评论。
+ */
+---
+{
+  giscusConfig.enable && (
+    <section class="comments" aria-label="评论">
+      <div class="giscus-container" />
+      <script is:inline define:vars={{ giscusConfig }}>
+        ;(() => {
+          const installKey = "__giscusInstalled"
+          if (window[installKey]) return
+          window[installKey] = true
+
+          // GitHub 色盲友好主题（Protanopia & Deuteranopia，红绿色盲）：
+          // 暗色 dark_protanopia / 亮色 light_protanopia。
+          const giscusTheme = (dark) =>
+            dark ? "dark_protanopia" : "light_protanopia"
+
+          const buildScript = () => {
+            const el = document.querySelector(".giscus-container")
+            if (!el) return
+            // 清空旧 iframe，避免切页后残留/重复
+            el.innerHTML = ""
+            const s = document.createElement("script")
+            s.src = "https://giscus.app/client.js"
+            s.setAttribute("data-repo", giscusConfig.repo)
+            s.setAttribute("data-repo-id", giscusConfig.repoId)
+            s.setAttribute("data-category", giscusConfig.category)
+            s.setAttribute("data-category-id", giscusConfig.categoryId)
+            s.setAttribute("data-mapping", giscusConfig.mapping)
+            s.setAttribute("data-strict", giscusConfig.strict)
+            s.setAttribute("data-reactions-enabled", giscusConfig.reactionsEnabled)
+            s.setAttribute("data-emit-metadata", giscusConfig.emitMetadata)
+            s.setAttribute("data-input-position", giscusConfig.inputPosition)
+            s.setAttribute(
+              "data-theme",
+              giscusTheme(
+                document.documentElement.classList.contains("dark")
+              )
+            )
+            s.setAttribute("data-lang", giscusConfig.lang)
+            s.setAttribute("data-loading", giscusConfig.loading)
+            s.crossOrigin = "anonymous"
+            s.async = true
+            el.appendChild(s)
+          }
+
+          document.addEventListener("astro:page-load", buildScript)
+          // theme.ts 用 document.dispatchEvent 派发，CustomEvent 默认不冒泡，
+          // 故监听器也必须在 document 上（window 收不到 document 上的非冒泡事件）。
+          document.addEventListener("blog:theme-change", (event) => {
+            const iframe = document.querySelector("iframe.giscus-frame")
+            const dark = event.detail && event.detail.dark
+            iframe?.contentWindow?.postMessage(
+              {
+                giscus: {
+                  setConfig: { theme: giscusTheme(dark) },
+                },
+              },
+              "https://giscus.app"
+            )
+          })
+          buildScript()
+        })()
+      </script>
+    </section>
+  )
+}

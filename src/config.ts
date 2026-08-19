@@ -328,3 +328,26 @@ export const umamiConfig = {
   shareId: "jME4HFb9JmfJM5zs",
   timezone: "Asia/Shanghai",
 } as const
+
+// ==================== giscus ====================
+
+/**
+ * Giscus 评论配置（基于 GitHub Discussions）。
+ * 配置值取自 blog-fuwari，复用其专用评论仓库 blog-friends。
+ * enable:false 时不渲染评论区。theme 不入配置：初始读 <html>.dark，
+ * 切换由 Comments.astro + theme.ts 的 blog:theme-change 事件 postMessage。
+ */
+export const giscusConfig = {
+  enable: true,
+  repo: "Ad-closeNN/blog-friends",
+  repoId: "R_kgDOPb5ZJw",
+  category: "General",
+  categoryId: "DIC_kwDOPb5ZJ84CuPmR",
+  mapping: "title",
+  strict: "0",
+  reactionsEnabled: "1",
+  emitMetadata: "0",
+  inputPosition: "top",
+  lang: "zh-CN",
+  loading: "lazy",
+} as const

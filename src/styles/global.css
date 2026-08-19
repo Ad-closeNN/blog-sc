@@ -1179,13 +1179,38 @@ button.home-pagination-page:active {
 }
 
 .footer-back {
-  color: var(--muted-foreground);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--foreground);
   font-size: 0.8125rem;
+  font-weight: 500;
   text-decoration: none;
+  background: color-mix(in oklch, var(--background) 70%, transparent);
+  backdrop-filter: blur(8px);
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    transform 160ms ease,
+    box-shadow 160ms ease;
 }
 
 .footer-back:hover {
-  color: var(--foreground);
+  background: color-mix(in oklch, var(--foreground) 10%, var(--background));
+  border-color: color-mix(in oklch, var(--foreground) 30%, var(--border));
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px -4px color-mix(in oklch, var(--foreground) 25%, transparent);
+}
+
+.footer-back:hover .footer-back-arrow {
+  transform: translateY(-2px);
+}
+
+.footer-back-arrow {
+  transition: transform 160ms ease;
 }
 
 /* Footer meta 行链接（备案 / RSS / Sitemap / 开源 / 驱动）：纯文字 hover，视觉更轻 */
@@ -2447,6 +2472,20 @@ main.is-posts-page {
   max-width: 780px;
   flex: 1;
   min-width: 0;
+}
+
+/* 评论区（Giscus）：宽度随 .post-article-main 对齐正文 780px */
+.comments {
+  margin-top: 3rem;
+}
+
+/* data-loading="lazy" 时 Giscus 用 1x1 占位，给个最小高度避免布局跳动 */
+.giscus-container {
+  min-height: 8rem;
+}
+
+.giscus-container iframe {
+  width: 100%;
 }
 
 .post-sidebar-right {

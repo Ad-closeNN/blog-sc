@@ -1,5 +1,6 @@
 ---
 import BackToPostsBar from "@/components/BackToPostsBar.astro"
+import Comments from "@/components/Comments.astro"
 import PostMeta from "@/components/PostMeta.astro"
 import SidebarStats from "@/components/SidebarStats"
 import { Badge } from "@/components/ui/badge"
@@ -237,6 +238,9 @@ const jsonLd = [
             ) : null
           }
         </nav>
+
+        {/* 评论区：宽度对齐正文（.post-article-main max-width:780px） */}
+        <Comments />
       </article>
 
       <!-- Right Sidebar Column: Sticky Table of Contents (TOC) -->

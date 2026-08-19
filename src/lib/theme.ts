@@ -57,6 +57,11 @@ function setDark(next: boolean, options: ThemeChangeOptions = {}) {
     root.classList.toggle("dark", next)
     localStorage.setItem("theme", next ? "dark" : "light")
     listeners.forEach((listener) => listener())
+    // 通知非 React 监听方（如 Comments.astro 的 Giscus postMessage）
+    // 跟随主题切换，避免重新加载评论。
+    document.dispatchEvent(
+      new CustomEvent("blog:theme-change", { detail: { dark: next } })
+    )
   }
   const cleanup = () => {
     if (token === themeChangeToken) {

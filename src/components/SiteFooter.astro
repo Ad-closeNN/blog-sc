@@ -20,9 +20,10 @@ const githubRepoUrl = `https://github.com/${site.githubRepo}`
       <a
         class="footer-back"
         href="#"
+        aria-label="回到顶部"
         onclick="const r=window.matchMedia('(prefers-reduced-motion: reduce)').matches;window.scrollTo({top:0,behavior:r?'auto':'smooth'});return false"
       >
-        回到顶部 ↑
+        回到顶部 <span class="footer-back-arrow" aria-hidden="true">↑</span>
       </a>
     </div>
 
