@@ -9,6 +9,7 @@ import {
   SunIcon,
 } from "lucide-react"
 
+import { navEntries } from "@/components/nav-entries"
 import { SearchResults } from "@/components/SearchResults"
 import type { Heading } from "@/components/TableOfContents"
 import { Button, buttonVariants } from "@/components/ui/button"
@@ -70,8 +71,13 @@ export default function MobileNavMenu({ pathname, headings = [] }: Props) {
   /*
    * transition:persist 下切页时 island 被保留，但 base-ui Dialog 的 portal 容器
    * 只解析一次、切页后仍可能指向被 View Transitions 换掉的旧 body，open/mounted
-   * 状态机失步后会留下透明但仍可交互的 overlay。交换 body 前同步关闭受控状态，
-   * 并强制卸载 portal，避免退出动画被页面切换打断。
+   * 状态机失步后会留下透明但仍可交互的 overlay，故切页后需强制卸载 portal 复位。
+   *
+   * 绑 astro:page-load（swap 之后）而非 astro:before-swap：unmount() 只应在关闭
+   * 动画结束后调用（base-ui 文档明示）。before-swap 时若用户正同时点头像导航 +
+   * 点抽屉按钮，unmount 会打断正在进行的 portal mount，把 mounted 写死 false，
+   * 导致之后抽屉再也打不开。page-load 在 swap 完成后触发，操作新页面上下文，无此
+   * 竞态。切页瞬间抽屉的可见关闭由渲染期 pathname 变化时的 setOpen(false) 兜底。
    */
   useEffect(() => {
     const reset = () => {
@@ -79,8 +85,8 @@ export default function MobileNavMenu({ pathname, headings = [] }: Props) {
       sheetActionsRef.current?.close()
       sheetActionsRef.current?.unmount()
     }
-    document.addEventListener("astro:before-swap", reset)
-    return () => document.removeEventListener("astro:before-swap", reset)
+    document.addEventListener("astro:page-load", reset)
+    return () => document.removeEventListener("astro:page-load", reset)
   }, [])
 
   const isDark = useSyncExternalStore(
@@ -236,6 +242,42 @@ export default function MobileNavMenu({ pathname, headings = [] }: Props) {
                   <BookOpenIcon className="size-4" />
                   {navigation.posts.label}
                 </SheetClose>
+              </nav>
+            </section>
+
+            {/* 快捷入口：与桌面 navbar NavMenu 同源（navEntries），
+                去掉 posts 以免与上方「快捷导航」的「文章」重复 */}
+            <section className="space-y-2">
+              <p className="text-[0.7rem] font-semibold tracking-widest text-muted-foreground uppercase">
+                快捷入口
+              </p>
+              <nav className="flex flex-col gap-0.5" aria-label="功能入口">
+                {navEntries
+                  .filter((entry) => entry.key !== "posts")
+                  .map((entry) => (
+                    <SheetClose
+                      key={entry.key}
+                      render={(props) => (
+                        <a
+                          href={entry.href}
+                          target={entry.external ? "_blank" : undefined}
+                          rel={
+                            entry.external
+                              ? "noopener noreferrer"
+                              : undefined
+                          }
+                          {...props}
+                        />
+                      )}
+                      nativeButton={false}
+                      className={navLinkClass(false)}
+                    >
+                      <span className="flex size-4 items-center justify-center text-muted-foreground">
+                        {entry.icon}
+                      </span>
+                      {entry.label}
+                    </SheetClose>
+                  ))}
               </nav>
             </section>
 

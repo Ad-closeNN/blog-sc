@@ -1,13 +1,7 @@
-import { links, navigation } from "@/config"
-import {
-  BookHeartIcon,
-  BookOpenIcon,
-  GitBranchIcon,
-  MoreVerticalIcon,
-  RssIcon,
-} from "lucide-react"
+import { MoreVerticalIcon } from "lucide-react"
 import { Fragment, useEffect, useRef } from "react"
 
+import { navEntries } from "@/components/nav-entries"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,43 +11,6 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-
-type MenuEntry = {
-  key: string
-  label: string
-  href: string
-  external?: boolean
-  icon?: React.ReactNode
-}
-
-const entries: MenuEntry[] = [
-  {
-    key: "posts",
-    label: navigation.posts.label,
-    href: navigation.posts.href,
-    icon: <BookOpenIcon />,
-  },
-  {
-    key: "friends",
-    label: navigation.friends.label,
-    href: navigation.friends.href,
-    icon: <BookHeartIcon />,
-  },
-  {
-    key: "rss",
-    label: "RSS 订阅",
-    href: links.rss.href,
-    external: true,
-    icon: <RssIcon />,
-  },
-  {
-    key: "github",
-    label: "GitHub",
-    href: links.github.href,
-    external: true,
-    icon: <GitBranchIcon />,
-  },
-]
 
 /**
  * 导航下拉菜单：归档 / 友链 / RSS / GitHub。
@@ -93,7 +50,7 @@ export default function NavMenu() {
         <MoreVerticalIcon />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" sideOffset={4} className="min-w-40">
-        {entries.map((entry, i) => (
+        {navEntries.map((entry, i) => (
           <Fragment key={entry.key}>
             {i > 0 && <DropdownMenuSeparator />}
             <DropdownMenuItem
