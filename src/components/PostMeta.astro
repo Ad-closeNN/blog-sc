@@ -4,12 +4,10 @@ import {
   formatDate,
   formatShortDate,
   postHref,
-  readingMinutes,
   type Post,
 } from "@/lib/posts"
 import {
   CalendarIcon,
-  ClockIcon,
   FileTextIcon,
   FolderIcon,
   RotateCwIcon,
@@ -34,7 +32,6 @@ const updatedText =
   isArticle && updated && formatDate(updated) !== formatDate(published)
     ? formatDate(updated)
     : null
-const minutes = words ? readingMinutes(words) : null
 ---
 
 <div class:list={["post-meta", isArticle && "is-article"]}>
@@ -64,16 +61,10 @@ const minutes = words ? readingMinutes(words) : null
 
   {
     words != null && words > 0 && (
-      <>
-        <span class="post-meta-item is-secondary">
-          <FileTextIcon className="post-meta-icon" aria-hidden="true" />
-          <span><span class="tabular-nums">{words.toLocaleString("zh-CN")}</span> 字</span>
-        </span>
-        <span class="post-meta-item is-secondary">
-          <ClockIcon className="post-meta-icon" aria-hidden="true" />
-          <span>{minutes} 分钟</span>
-        </span>
-      </>
+      <span class="post-meta-item is-secondary">
+        <FileTextIcon className="post-meta-icon" aria-hidden="true" />
+        <span><span class="tabular-nums">{words.toLocaleString("zh-CN")}</span> 字</span>
+      </span>
     )
   }
 

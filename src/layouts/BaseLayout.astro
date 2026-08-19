@@ -489,6 +489,20 @@ const ogImageAbs = Astro.props.ogImage
     <main class={Astro.props.mainClass}>
       <slot />
     </main>
+    {
+      showFooter && (
+        <div class="mx-auto flex w-[min(1120px,calc(100%_-_32px))] justify-end pb-4 max-[640px]:w-[calc(100%_-_24px)]">
+          <a
+            class="footer-back"
+            href="#"
+            aria-label="回到顶部"
+            onclick="const r=window.matchMedia('(prefers-reduced-motion: reduce)').matches;window.scrollTo({top:0,behavior:r?'auto':'smooth'});return false"
+          >
+            回到顶部 <span class="footer-back-arrow" aria-hidden="true">↑</span>
+          </a>
+        </div>
+      )
+    }
     {showFooter && <SiteFooter />}
     <ImageLightbox />
   </body>

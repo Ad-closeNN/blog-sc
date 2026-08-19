@@ -12,19 +12,11 @@ const githubRepoUrl = `https://github.com/${site.githubRepo}`
     class="mx-auto flex w-[min(1120px,calc(100%_-_32px))] flex-col gap-6 pt-12 pb-10 max-[640px]:w-[calc(100%_-_24px)] max-[640px]:pt-9 max-[640px]:pb-8"
   >
     <div
-      class="flex items-center justify-between max-[640px]:flex-col max-[640px]:items-start max-[640px]:gap-3"
+      class="flex items-center justify-center max-[640px]:flex-col max-[640px]:gap-3"
     >
       <p class="m-0 font-mono text-xs text-muted-foreground">
         {site.copyright}
       </p>
-      <a
-        class="footer-back"
-        href="#"
-        aria-label="回到顶部"
-        onclick="const r=window.matchMedia('(prefers-reduced-motion: reduce)').matches;window.scrollTo({top:0,behavior:r?'auto':'smooth'});return false"
-      >
-        回到顶部 <span class="footer-back-arrow" aria-hidden="true">↑</span>
-      </a>
     </div>
 
     <!-- 备案 / RSS / Sitemap / 开源 / 字数 / 驱动 / Cloudflare -->
