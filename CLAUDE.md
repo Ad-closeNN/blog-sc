@@ -115,6 +115,14 @@ Typical page pattern: frontmatter imports `Layout` + React components → `<Layo
 - `clean-unused-pictures.js`：审计 `src/content/posts` 对 `public/pic/` 的引用。**只读 `images:check`** 输出未引用候选；**`images:clean`（`--delete`）才删除**。`pic-allowlist.txt` 是保留名单（每行一个相对 `public/pic/` 路径，支持 `/pic/` 前缀，`#` 注释），写入名单的图片即使未被文章引用也不删。
 - 这两个是独立 Node 脚本，不参与 Astro 构建 / typecheck。
 
+### 站点公告横幅（`src/components/SiteNotice.astro`）
+
+- 文案 / 开关 / 链接都在 `src/config.ts` 的 `noticeConfig`。关闭状态按 **`noticeConfig.id`** 存 `localStorage["blog:notice-dismissed"]`——**改文案必须同时递增 id**，否则关过的老访客永远看不到新公告。
+- 组件模板**刻意不包 `{noticeConfig.enable && ...}`**：`is:inline` 脚本放进 JSX 表达式会让 `prettier-plugin-astro` 解析失败（`Comments.astro` 就因此在 `pnpm format` 里长期报 SyntaxError）。`enable` 判断放在调用处（`BaseLayout.astro` / `index.astro`）。
+- **两处渲染点**：非首页由 `BaseLayout.astro` 插在 `<main>` 顶部；首页 `main.is-home-feed` 是全宽（横幅要出血），公告改由 `index.astro` 放进 `.home-feed-panel` 内，宽度全靠父级，组件自身不设宽度。加新布局时注意别落进全宽容器。
+- 默认渲染为可见、脚本按需 `hidden`：无 JS 时公告照常显示（只是关不掉）。已关过的访客靠**同步执行**的 inline 脚本 + `astro:before-swap`（给 `event.newDocument` 打 hidden）两条路径避免闪现。
+- 收起动画：先把 `offsetHeight` 写成具体 px、强制回流、再降到 0（`auto → 0` 不产生过渡）。`transitionend` 必须按 `event.target === slot && propertyName === "height"` 过滤——子元素的 opacity/transform 过渡会冒泡上来提前判定完成；另有 700ms `setTimeout` 兜底（过渡被打断 / 标签页切后台）。
+
 ### 首页 JS 分页 / 归档
 
 - 首页文章列表是**客户端 JS 分页**（`src/components/HomePagination.astro`），窗口算法同 Fuwari：当前页 ±2 共 5 个页码，两端收缩为 `1 … n … N`。frontmatter 与切换时的客户端重渲染用**同一份**窗口算法（注释标注「与组件 frontmatter 同源」），改算法两处同步。

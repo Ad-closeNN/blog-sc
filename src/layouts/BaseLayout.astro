@@ -4,8 +4,9 @@ import ImageLightbox from "@/components/ImageLightbox.astro"
 import RouteProgressScripts from "@/components/RouteProgressScripts.astro"
 import SiteFooter from "@/components/SiteFooter.astro"
 import SiteNavbar from "@/components/SiteNavbar.astro"
+import SiteNotice from "@/components/SiteNotice.astro"
 import type { Heading } from "@/components/TableOfContents"
-import { gaConfig, site, umamiConfig } from "@/config"
+import { gaConfig, noticeConfig, site, umamiConfig } from "@/config"
 import { publicPath } from "@/lib/posts"
 import "@/styles/global.css"
 
@@ -487,6 +488,8 @@ const ogImageAbs = Astro.props.ogImage
       navbarSwapTitle={Astro.props.navbarSwapTitle}
     />
     <main class={Astro.props.mainClass}>
+      <!-- 首页 main 全宽（横幅出血），公告改由 index.astro 放进 .home-feed-panel -->
+      {noticeConfig.enable && !isHome && <SiteNotice />}
       <slot />
     </main>
     {

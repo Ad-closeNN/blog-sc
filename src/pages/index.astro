@@ -2,8 +2,9 @@
 import HomePagination from "@/components/HomePagination.astro"
 import PostTimeline from "@/components/PostTimeline.astro"
 import SidebarStats from "@/components/SidebarStats"
+import SiteNotice from "@/components/SiteNotice.astro"
 import TaxonomyPanel from "@/components/TaxonomyPanel.astro"
-import { links, profile, site } from "@/config"
+import { links, noticeConfig, profile, site } from "@/config"
 import BaseLayout from "@/layouts/BaseLayout.astro"
 import { getBuildCommit } from "@/lib/build-commit"
 import { HOME_PAGE_SIZE, getPosts } from "@/lib/posts"
@@ -107,6 +108,8 @@ const jsonLd = {
     aria-label="文章列表"
     data-home-feed-panel
   >
+    {noticeConfig.enable && <SiteNotice />}
+
     <header class="home-feed-header">
       <p>{summary}</p>
     </header>

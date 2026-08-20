@@ -1,0 +1,302 @@
+---
+import { noticeConfig } from "@/config"
+import { InfoIcon, XIcon } from "lucide-react"
+
+/**
+ * 站点公告横幅（INFO）。可手动关闭，关闭时整条向上收起（height → 0 + 内容上移淡出）。
+ *
+ * - 关闭状态存 localStorage（`blog:notice-dismissed` = noticeConfig.id），
+ *   换文案时递增 config 里的 id 才能重新对老访客展示。
+ * - 默认渲染为可见、由脚本按需 hidden：无 JS 时公告照常显示（只是关不掉）。
+ * - 脚本必须 is:inline 且紧随 markup：同步执行早于本区域首帧，已关闭过的访客
+ *   不会先闪一下公告。**整个模板刻意不包 `{noticeConfig.enable && ...}`**：
+ *   `is:inline` 脚本放进 JSX 表达式里会让 prettier-plugin-astro 解析失败
+ *   （参见 Comments.astro 的既有报错）。enable 判断放在调用处
+ *   （BaseLayout.astro / index.astro）。
+ * - ClientRouter（View Transitions）下：`astro:before-swap` 先给新文档打 hidden
+ *   （避免切页闪一下），`astro:page-load` 重新绑定关闭按钮。installKey 保证
+ *   监听只绑一次，模式同 BaseLayout.astro / Comments.astro。
+ */
+---
+
+<div class="site-notice-slot" data-site-notice>
+  <aside class="site-notice" aria-label="站点公告">
+    <InfoIcon className="site-notice-icon size-4" aria-hidden="true" />
+
+    <div class="site-notice-main">
+      <p class="site-notice-title">
+        <span class="site-notice-level">{noticeConfig.level}</span>
+        <span>{noticeConfig.title}</span>
+      </p>
+      <p class="site-notice-text">{noticeConfig.body}</p>
+      <p class="site-notice-links">
+        {
+          noticeConfig.links.map((link, index) => (
+            <Fragment>
+              {index > 0 && (
+                <span class="site-notice-sep" aria-hidden="true">
+                  ·
+                </span>
+              )}
+              <a
+                class="site-notice-link"
+                href={link.href}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {link.label}
+              </a>
+            </Fragment>
+          ))
+        }
+      </p>
+    </div>
+
+    <button
+      type="button"
+      class="site-notice-close"
+      data-notice-close
+      aria-label="关闭公告"
+    >
+      <XIcon className="size-4" aria-hidden="true" />
+    </button>
+  </aside>
+</div>
+
+<script is:inline define:vars={{ noticeId: noticeConfig.id }}>
+  ;(() => {
+    /* eslint-disable */
+    const KEY = "blog:notice-dismissed"
+
+    const isDismissed = () => {
+      try {
+        return localStorage.getItem(KEY) === noticeId
+      } catch {
+        return false
+      }
+    }
+
+    // 已关闭过就直接 hidden：首屏同步执行（早于本区域首帧），切页走
+    // before-swap，两条路径都不会先闪出公告再消失。
+    const hideIn = (doc) => {
+      if (!isDismissed()) return
+      const slot = doc.querySelector("[data-site-notice]")
+      if (slot) slot.hidden = true
+    }
+
+    const collapse = (slot) => {
+      try {
+        localStorage.setItem(KEY, noticeId)
+      } catch {}
+
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        slot.hidden = true
+        return
+      }
+
+      let finished = false
+      const done = () => {
+        if (finished) return
+        finished = true
+        slot.removeEventListener("transitionend", onEnd)
+        slot.hidden = true
+        slot.style.height = ""
+        slot.classList.remove("is-closing")
+      }
+      // 子元素的 opacity / transform 过渡也会冒泡到 slot，必须按 target
+      // + propertyName 过滤，否则会被提前判定为收起完成。
+      const onEnd = (event) => {
+        if (event.target === slot && event.propertyName === "height") done()
+      }
+
+      // 先把当前高度写成具体值、强制回流，再降到 0——auto → 0 不产生过渡
+      slot.style.height = `${slot.offsetHeight}px`
+      slot.classList.add("is-closing")
+      void slot.offsetHeight
+      slot.style.height = "0px"
+
+      slot.addEventListener("transitionend", onEnd)
+      // 兜底：transitionend 未触发（被打断 / 标签页切到后台）时仍要收尾
+      setTimeout(done, 700)
+    }
+
+    const bind = () => {
+      const slot = document.querySelector("[data-site-notice]")
+      if (!slot || slot.dataset.noticeBound === "1") return
+      slot.dataset.noticeBound = "1"
+      const closeBtn = slot.querySelector("[data-notice-close]")
+      if (closeBtn) closeBtn.addEventListener("click", () => collapse(slot))
+    }
+
+    hideIn(document)
+
+    const installKey = "__siteNoticeInstalled"
+    if (!window[installKey]) {
+      window[installKey] = true
+      document.addEventListener("astro:before-swap", (event) => {
+        hideIn(event.newDocument)
+      })
+      document.addEventListener("astro:page-load", () => {
+        hideIn(document)
+        bind()
+      })
+    }
+
+    bind()
+    /* eslint-enable */
+  })()
+</script>
+
+<style>
+  /* 独立收起容器：overflow:hidden 形成 BFC，height 动画能把内部 margin 一起收掉。
+     宽度交给父级（非首页是 <main>，首页是 .home-feed-panel），这里只占满。
+     不给它 display（保持默认 block），这样 [hidden] 的 display:none 不会被覆盖。 */
+  .site-notice-slot {
+    overflow: hidden;
+  }
+
+  .site-notice {
+    --notice-accent: oklch(0.5 0.12 245);
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin-bottom: 2rem;
+    padding: 0.875rem 1rem;
+    border: 1px solid
+      color-mix(in oklch, var(--notice-accent) 28%, var(--border));
+    border-left-width: 3px;
+    border-left-color: var(--notice-accent);
+    border-radius: calc(var(--radius) * 0.8);
+    background: color-mix(in oklch, var(--notice-accent) 6%, var(--card));
+  }
+
+  :global(.dark) .site-notice {
+    --notice-accent: oklch(0.72 0.11 245);
+    background: color-mix(in oklch, var(--notice-accent) 10%, var(--card));
+  }
+
+  .site-notice-icon {
+    flex-shrink: 0;
+    margin-top: 0.1rem;
+    color: var(--notice-accent);
+  }
+
+  .site-notice-main {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .site-notice-title {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    line-height: 1.5;
+    color: var(--foreground);
+  }
+
+  .site-notice-level {
+    border-radius: calc(var(--radius) * 0.4);
+    background: color-mix(in oklch, var(--notice-accent) 16%, transparent);
+    padding: 0.05rem 0.35rem;
+    color: var(--notice-accent);
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .site-notice-text {
+    margin: 0.35rem 0 0;
+    font-size: 0.875rem;
+    line-height: 1.6;
+    color: var(--muted-foreground);
+  }
+
+  .site-notice-links {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem 0.5rem;
+    margin: 0.45rem 0 0;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+  }
+
+  .site-notice-sep {
+    color: var(--muted-foreground);
+  }
+
+  .site-notice-link {
+    color: var(--notice-accent);
+    text-decoration: underline;
+    text-decoration-color: color-mix(
+      in oklch,
+      var(--notice-accent) 40%,
+      transparent
+    );
+    text-underline-offset: 3px;
+  }
+
+  .site-notice-link:hover {
+    text-decoration-color: currentcolor;
+  }
+
+  .site-notice-close {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    border: none;
+    border-radius: calc(var(--radius) * 0.6);
+    background: none;
+    color: var(--muted-foreground);
+  }
+
+  .site-notice-close:hover {
+    background: var(--muted);
+    color: var(--foreground);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .site-notice-close {
+      transition:
+        background-color 150ms ease,
+        color 150ms ease;
+    }
+
+    /* 收起：容器高度归零，同时内容向上位移淡出 */
+    .site-notice-slot.is-closing {
+      transition: height 320ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .site-notice-slot.is-closing .site-notice {
+      opacity: 0;
+      transform: translateY(-12px);
+      transition:
+        opacity 220ms ease,
+        transform 300ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+  }
+
+  @media (max-width: 640px) {
+    .site-notice {
+      gap: 0.625rem;
+      padding: 0.75rem 0.875rem;
+    }
+
+    .site-notice-title {
+      font-size: 0.875rem;
+    }
+
+    .site-notice-text {
+      font-size: 0.8125rem;
+    }
+  }
+</style>

@@ -63,6 +63,32 @@ export const links = {
   },
 } as const
 
+// ==================== notice ====================
+
+/**
+ * 站点公告横幅（INFO 级）。渲染于 BaseLayout 的 <main> 顶部，可手动关闭，
+ * 关闭时向上收起。关闭状态按 id 存进 localStorage（`blog:notice-dismissed`），
+ * 改动文案时**必须同步递增 id**，否则老访客不会再看到新公告。
+ * enable:false 时完全不渲染。
+ */
+export const noticeConfig = {
+  enable: true,
+  id: "rebuild-2026-08",
+  level: "info",
+  title: "本站已完成重构",
+  body: "站点从 blog-fuwari 迁移到全新的 blog-sc，原仓库已归档。",
+  links: [
+    {
+      label: "原仓库（已归档）",
+      href: "https://github.com/Ad-closeNN/blog-fuwari",
+    },
+    {
+      label: "新仓库 blog-sc",
+      href: "https://github.com/Ad-closeNN/blog-sc",
+    },
+  ],
+} as const
+
 // ==================== footer ====================
 
 /** Footer 底部 meta 块配置（备案号 / RSS / Sitemap / 开源 / 驱动 / Cloudflare） */
