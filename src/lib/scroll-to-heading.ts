@@ -27,7 +27,8 @@ export function scrollToHeading(
   })
 
   if (options?.updateHash !== false) {
-    history.pushState(null, "", `#${slug}`)
+    // replaceState：目录点击不污染返回键历史（避免按 N 次返回才能离开页面）
+    history.replaceState(null, "", `#${slug}`)
   }
 
   return true
@@ -35,6 +36,10 @@ export function scrollToHeading(
 
 /** 点击跳转期间锁定 scrollSpy 的建议时长（含可选 Sheet 关闭等待） */
 export function clickScrollLockMs(options?: { afterSheetClose?: boolean }): number {
+  const reduceMotion = prefersReducedMotion()
+  const closeMs = options?.afterSheetClose ? SHEET_CLOSE_MS : 0
+  return closeMs + (reduceMotion ? 0 : SMOOTH_SCROLL_MS)
+}export function clickScrollLockMs(options?: { afterSheetClose?: boolean }): number {
   const reduceMotion = prefersReducedMotion()
   const closeMs = options?.afterSheetClose ? SHEET_CLOSE_MS : 0
   return closeMs + (reduceMotion ? 0 : SMOOTH_SCROLL_MS)
