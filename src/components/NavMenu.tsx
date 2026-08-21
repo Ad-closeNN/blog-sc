@@ -25,14 +25,29 @@ export default function NavMenu() {
   const menuActionsRef = useRef<{ close: () => void; unmount: () => void }>(
     null
   )
+  const resetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const menuGenRef = useRef(0)
 
   useEffect(() => {
+    // 等菜单关闭过渡结束后再 unmount；用代际号兜底，
+    // 期间用户重新打开菜单时，过期的 unmount 自动作废。
     const reset = () => {
       menuActionsRef.current?.close()
-      menuActionsRef.current?.unmount()
+      menuGenRef.current++
+      if (resetTimerRef.current) clearTimeout(resetTimerRef.current)
+      const gen = menuGenRef.current
+      resetTimerRef.current = setTimeout(() => {
+        resetTimerRef.current = null
+        if (gen === menuGenRef.current) {
+          menuActionsRef.current?.unmount()
+        }
+      }, 150)
     }
     document.addEventListener("astro:page-load", reset)
-    return () => document.removeEventListener("astro:page-load", reset)
+    return () => {
+      document.removeEventListener("astro:page-load", reset)
+      if (resetTimerRef.current) clearTimeout(resetTimerRef.current)
+    }
   }, [])
 
   return (

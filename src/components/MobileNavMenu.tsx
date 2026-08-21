@@ -58,6 +58,9 @@ export default function MobileNavMenu({ pathname, headings = [] }: Props) {
   const scrollAfterCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   )
+  const resetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // 代际号：每次「打开 / 关闭 / 切页重置」都递增，过期的卸载定时器自动作废
+  const sheetGenRef = useRef(0)
   const scrollRafRef = useRef<number | null>(null)
   // 缓存各 heading 的绝对 offset，滚动时纯数字比较，避免每帧 offsetTop reflow
   const offsetsRef = useRef<{ id: string; top: number }[]>([])
@@ -80,13 +83,28 @@ export default function MobileNavMenu({ pathname, headings = [] }: Props) {
    * 竞态。切页瞬间抽屉的可见关闭由渲染期 pathname 变化时的 setOpen(false) 兜底。
    */
   useEffect(() => {
+    // 等 Sheet 关闭动画结束再 unmount（base-ui 文档要求），
+    // 避免切页瞬间与用户点击竞争，把 mounted 写死导致抽屉再也打不开。
+    // 用代际号兜底：只要期间用户重新打开了抽屉（gen 变化），
+    // 这个过期的 unmount 就不会执行，抽屉能正常显示。
     const reset = () => {
       setOpen(false)
       sheetActionsRef.current?.close()
-      sheetActionsRef.current?.unmount()
+      sheetGenRef.current++
+      if (resetTimerRef.current) clearTimeout(resetTimerRef.current)
+      const gen = sheetGenRef.current
+      resetTimerRef.current = setTimeout(() => {
+        resetTimerRef.current = null
+        if (gen === sheetGenRef.current) {
+          sheetActionsRef.current?.unmount()
+        }
+      }, SHEET_CLOSE_MS)
     }
     document.addEventListener("astro:page-load", reset)
-    return () => document.removeEventListener("astro:page-load", reset)
+    return () => {
+      document.removeEventListener("astro:page-load", reset)
+      if (resetTimerRef.current) clearTimeout(resetTimerRef.current)
+    }
   }, [])
 
   const isDark = useSyncExternalStore(
@@ -135,15 +153,29 @@ export default function MobileNavMenu({ pathname, headings = [] }: Props) {
 
     window.addEventListener("scroll", onScroll, { passive: true })
     window.addEventListener("resize", measureOffsets)
+
+    // 返回键（popstate）时按 URL hash 同步目录高亮并滚到对应标题
+    const onPop = () => {
+      const slug = decodeURIComponent(location.hash.replace(/^#/, ""))
+      const el = slug ? document.getElementById(slug) : null
+      if (el) {
+        setActiveId(slug)
+        el.scrollIntoView({ behavior: "auto", block: "start" })
+      }
+    }
+    window.addEventListener("popstate", onPop)
+
     onScroll()
 
     return () => {
       window.removeEventListener("scroll", onScroll)
       window.removeEventListener("resize", measureOffsets)
+      window.removeEventListener("popstate", onPop)
       if (lockTimerRef.current) clearTimeout(lockTimerRef.current)
       if (scrollAfterCloseTimerRef.current) {
         clearTimeout(scrollAfterCloseTimerRef.current)
       }
+      if (resetTimerRef.current) clearTimeout(resetTimerRef.current)
       if (scrollRafRef.current !== null) {
         cancelAnimationFrame(scrollRafRef.current)
         scrollRafRef.current = null
@@ -194,7 +226,12 @@ export default function MobileNavMenu({ pathname, headings = [] }: Props) {
         title="菜单"
         aria-expanded={open}
         aria-haspopup="dialog"
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          // 打开抽屉：作废任何过期的卸载定时器，避免刚打开就被杀掉
+          sheetGenRef.current++
+          if (resetTimerRef.current) clearTimeout(resetTimerRef.current)
+          setOpen(true)
+        }}
       >
         <MenuIcon />
       </Button>
@@ -202,7 +239,10 @@ export default function MobileNavMenu({ pathname, headings = [] }: Props) {
       <Sheet
         key={pathname}
         open={open}
-        onOpenChange={setOpen}
+        onOpenChange={(next) => {
+          if (next && resetTimerRef.current) clearTimeout(resetTimerRef.current)
+          setOpen(next)
+        }}
         actionsRef={sheetActionsRef}
       >
         <SheetContent
@@ -363,23 +403,30 @@ function MobileSearchSection() {
   const [query, setQuery] = useState("")
   const [results, setResults] = useState<Awaited<ReturnType<typeof search>>>([])
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const seqRef = useRef(0)
 
   const onInput = (value: string) => {
     setQuery(value)
     if (timerRef.current) clearTimeout(timerRef.current)
     const trimmed = value.trim()
     if (!trimmed) {
+      seqRef.current++ // 丢弃所有在途的旧结果
       setResults([])
       return
     }
+    seqRef.current++
+    const seq = seqRef.current
     timerRef.current = setTimeout(async () => {
-      setResults(await search(value))
+      const r = await search(value)
+      // 只有最新一次输入的响应才落地，避免旧结果覆盖新结果
+      if (seq === seqRef.current) setResults(r)
     }, 200)
   }
 
   useEffect(
     () => () => {
       if (timerRef.current) clearTimeout(timerRef.current)
+      seqRef.current++
     },
     []
   )

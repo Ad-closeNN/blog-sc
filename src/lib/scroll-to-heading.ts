@@ -27,7 +27,8 @@ export function scrollToHeading(
   })
 
   if (options?.updateHash !== false) {
-    history.pushState(null, "", `#${slug}`)
+    // replaceState：目录点击不污染返回键历史（避免按 N 次返回才能离开页面）
+    history.replaceState(null, "", `#${slug}`)
   }
 
   return true
