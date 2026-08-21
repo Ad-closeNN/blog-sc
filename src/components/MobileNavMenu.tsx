@@ -58,6 +58,124 @@ export default function MobileNavMenu({ pathname, headings = [] }: Props) {
   const scrollAfterCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   )
+  const resetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const scrollRafRef = useRef<number | null>(null)
+  // 缓存各 heading 的绝对 offset，滚动时纯数字比较，避免每帧 offsetTop reflow
+  const offsetsRef = useRef<{ id: string; top: number }[]>([])
+
+  // 路由变化时关闭抽屉（渲染期同步，避免 effect 内 setState）
+  if (pathname !== prevPathname) {
+    setPrevPathname(pathname)
+    setOpen(false)
+  }
+
+  /*
+   * transition:persist 下切页时 island 被保留，但 base-ui Dialog 的 portal 容器
+   * 只解析一次、切页后仍可能指向被 View Transitions 换掉的旧 body，open/mounted
+   * 状态机失步后会留下透明但仍可交互的 overlay，故切页后需强制卸载 portal 复位。
+   *
+   * 绑 astro:page-load（swap 之后）而非 astro:before-swap：unmount() 只应在关闭
+   * 动画结束后调用（base-ui 文档明示）。before-swap 时若用户正同时点头像导航 +
+   * 点抽屉按钮，unmount 会打断正在进行的 portal mount，把 mounted 写死 false，
+   * 导致之后抽屉再也打不开。page-load 在 swap 完成后触发，操作新页面上下文，无此
+   * 竞态。切页瞬间抽屉的可见关闭由渲染期 pathname 变化时的 setOpen(false) 兜底。
+   */
+  useEffect(() => {
+    // 等 Sheet 关闭动画结束再 unmount（base-ui 文档要求），
+    // 避免切页瞬间与用户点击竞争，把 mounted 写死导致抽屉再也打不开。
+    const reset = () => {
+      setOpen(false)
+      sheetActionsRef.current?.close()
+      if (resetTimerRef.current) clearTimeout(resetTimerRef.current)
+      resetTimerRef.current = setTimeout(() => {
+        resetTimerRef.current = null
+        sheetActionsRef.current?.unmount()
+      }, SHEET_CLOSE_MS)
+    }
+    document.addEventListener("astro:page-load", reset)
+    return () => {
+      document.removeEventListener("astro:page-load", reset)
+      if (resetTimerRef.current) clearTimeout(resetTimerRef.current)
+    }
+  }, [])
+
+  const isDark = useSyncExternalStore(
+    themeStore.subscribe,
+    themeStore.getSnapshot,
+    themeStore.getServerSnapshot,
+  )
+
+  const isHome = pathname === "/"
+  const isPosts = pathname === "/posts/" || pathname.startsWith("/posts/")
+
+  useEffect(() => {
+    if (filteredHeadings.length === 0) return
+
+    const measureOffsets = () => {
+      offsetsRef.current = filteredHeadings
+        .map((h) => document.getElementById(h.slug))
+        .filter((el): el is HTMLElement => el !== null)
+        .map((el) => ({ id: el.id, top: el.getBoundingClientRect().top + window.scrollY }))
+    }
+
+    measureOffsets()
+    if (offsetsRef.current.length === 0) return
+
+    const onScroll = () => {
+      if (isClickScrollingRef.current) return
+      if (scrollRafRef.current !== null) return
+
+      scrollRafRef.current = requestAnimationFrame(() => {
+        scrollRafRef.current = null
+        if (isClickScrollingRef.current) return
+
+        const offsets = offsetsRef.current
+        if (offsets.length === 0) return
+
+        const scrollPos = window.scrollY + 85
+        let current = ""
+        for (const item of offsets) {
+          if (item.top <= scrollPos) current = item.id
+          else break
+        }
+        const nextId = current || offsets[0].id
+        setActiveId((prev) => (prev === nextId ? prev : nextId))
+      })
+    }
+
+    window.addEventListener("scroll", onScroll, { passive: true })
+    window.addEventListener("resize", measureOffsets)
+
+    // 返回键（popstate）时按 URL hash 同步目录高亮并滚到对应标题
+    const onPop = () => {
+      const slug = decodeURIComponent(location.hash.replace(/^#/, ""))
+      const el = slug ? document.getElementById(slug) : null
+      if (el) {
+        setActiveId(slug)
+        el.scrollIntoView({ behavior: "auto", block: "start"   headings?: Heading[]
+}
+
+export default function MobileNavMenu({ pathname, headings = [] }: Props) {
+  const filteredHeadings = useMemo(
+    () => headings.filter((h) => h.depth >= 2 && h.depth <= 4),
+    [headings],
+  )
+  const headingKey = useMemo(
+    () => filteredHeadings.map((h) => h.slug).join("|"),
+    [filteredHeadings],
+  )
+
+  const [open, setOpen] = useState(false)
+  const [prevPathname, setPrevPathname] = useState(pathname)
+  const [activeId, setActiveId] = useState("")
+  const sheetActionsRef = useRef<{ close: () => void; unmount: () => void }>(
+    null,
+  )
+  const isClickScrollingRef = useRef(false)
+  const lockTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const scrollAfterCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  )
   const scrollRafRef = useRef<number | null>(null)
   // 缓存各 heading 的绝对 offset，滚动时纯数字比较，避免每帧 offsetTop reflow
   const offsetsRef = useRef<{ id: string; top: number }[]>([])
