@@ -39,8 +39,4 @@ export function clickScrollLockMs(options?: { afterSheetClose?: boolean }): numb
   const reduceMotion = prefersReducedMotion()
   const closeMs = options?.afterSheetClose ? SHEET_CLOSE_MS : 0
   return closeMs + (reduceMotion ? 0 : SMOOTH_SCROLL_MS)
-}export function clickScrollLockMs(options?: { afterSheetClose?: boolean }): number {
-  const reduceMotion = prefersReducedMotion()
-  const closeMs = options?.afterSheetClose ? SHEET_CLOSE_MS : 0
-  return closeMs + (reduceMotion ? 0 : SMOOTH_SCROLL_MS)
 }

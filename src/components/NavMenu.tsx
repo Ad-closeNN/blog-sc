@@ -26,15 +26,21 @@ export default function NavMenu() {
     null
   )
   const resetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const menuGenRef = useRef(0)
 
   useEffect(() => {
-    // 等菜单关闭过渡结束后再 unmount，避免切页竞态把 mounted 写死
+    // 等菜单关闭过渡结束后再 unmount；用代际号兜底，
+    // 期间用户重新打开菜单时，过期的 unmount 自动作废。
     const reset = () => {
       menuActionsRef.current?.close()
+      menuGenRef.current++
       if (resetTimerRef.current) clearTimeout(resetTimerRef.current)
+      const gen = menuGenRef.current
       resetTimerRef.current = setTimeout(() => {
         resetTimerRef.current = null
-        menuActionsRef.current?.unmount()
+        if (gen === menuGenRef.current) {
+          menuActionsRef.current?.unmount()
+        }
       }, 150)
     }
     document.addEventListener("astro:page-load", reset)
@@ -44,47 +50,6 @@ export default function NavMenu() {
     }
   }, [])
 
-  return (
-    <DropdownMenu actionsRef={menuActionsRef}>
-      <DropdownMenuTrigger
-        render={
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-sm"
-            aria-label="更多菜单"
-          />
-        }
-      >
-        <MoreVerticalIcon />
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" sideOffset={4} className="min-w-40">
-        {navEntries.map((entry, i) => (
-          <Fragment key={entry.key}>
-            {i > 0 && <DropdownMenuSeparator />}
-            <DropdownMenuItem
-              render={
-                <a
-                  href={entry.href}
-                  target={entry.external ? "_blank" : undefined}
-                  rel={entry.external ? "noopener noreferrer" : undefined}
-                  className="flex w-full items-center"
-                >
-                  {entry.icon && (
-                    <span className="flex size-4 items-center justify-center text-muted-foreground">
-                      {entry.icon}
-                    </span>
-                  )}
-                  <span className={cn("flex-1")}>{entry.label}</span>
-                </a>
-              }
-            />
-          </Fragment>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  )
-}
   return (
     <DropdownMenu actionsRef={menuActionsRef}>
       <DropdownMenuTrigger
