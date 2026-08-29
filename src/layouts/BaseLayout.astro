@@ -104,7 +104,14 @@ const ogImageAbs = Astro.props.ogImage
         />
       )
     }
-    <link rel="icon" type="image/png" href={site.avatarSrc} />
+    <!-- favicon 用圆形透明 avatarSrc：浏览器 tab 四角真透明，Google 侧会自行
+         填底再套圆形裁切（见 config.ts）。OG 图另用方形 iconSrc，别混用。
+         顺序有意义：Google 未规定多个 icon 声明的优先级，把 600×600 PNG 放
+         首位对齐官方「建议大于 48×48」；/favicon.ico 只为浏览器地址栏与直连
+         根路径的第三方服务兜底，sizes 必须列全它真实含有的三档。
+         Google 只读首页的 link 标签、按 hostname 缓存，URL 要保持稳定。 -->
+    <link rel="icon" type="image/png" href={site.avatarSrc} sizes="600x600" />
+    <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48" />
     <link rel="apple-touch-icon" href={site.avatarSrc} />
     <!-- MiSans 简繁中文 WebFont (来自 ProjectK-Web) -->
     <link rel="stylesheet" href="/fonts/misans-web-vf-font/MiSans.min.css" />

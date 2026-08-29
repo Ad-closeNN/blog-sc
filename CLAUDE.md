@@ -131,6 +131,40 @@ Typical page pattern: frontmatter imports `Layout` + React components → `<Layo
 - 第 2 页起 navbar 面包屑切到「首页 / N/总页」，回第 1 页恢复品牌名。
 - `/posts/` 是按年归档（`src/components/PostArchive.astro` + `groupPostsByYear` from `src/lib/posts.ts`），不是列表。
 
+### robots.txt（`src/pages/robots.txt.ts`）
+
+- 是**端点不是静态文件**，`public/robots.txt` 已删（同路径静态文件会和页面路由冲突）。Sitemap 行从 `site.url` 派生，换域名只改 `config.ts` 一处。
+- **`/tags/` `/categories/` 绝不能在 robots.txt 里 `Disallow`**：两页已带 `<meta name="robots" content="noindex, follow">`（`BaseLayout.astro` 的 `noindex` prop）。Google 明确要求「noindex 生效的前提是页面未被 robots.txt 拦住」——拦了爬虫就读不到 noindex，加上首页 `TaxonomyPanel` 有内链指过去，反而会被 URL-only 收录（标题位显示裸 URL）。这是修过的坑，别再加回来。
+- 首页参数变体（`timeline-filter.ts` 的 `replaceState` 写的 `?tag=` / `?cat=`）用**根锚定**规则 `Disallow: /?tag=`，**不要写成 `/*?tag=`**——通配版会连带拦住 `/tags/?tag=x`，把上面那个问题原样重演。
+- `sitemap` 的 filter（`astro.config.mjs`）已排除这两页，与 noindex 一致，保持。
+
+### 头像双份：`avatarSrc` 与 `iconSrc`（`src/config.ts`）
+
+`public/images/` 下两张头像**不是重复文件，不要合并或删任一张**：
+
+| 文件 | config key | 形态 | 用途 |
+|---|---|---|---|
+| `avatar.png` 140KB | `site.avatarSrc` | 600×600 圆形，调色板透明（PLTE+tRNS，约 21% 像素透明） | 站内 UI（`SiteNavbar`、`friends.astro` 给别人抄的友链素材）+ **favicon / `apple-touch-icon`** |
+| `avatar.jpg` 44KB | `site.iconSrc` | 600×600 方形不透明（即 png 压白底的展平版） | **只给各页 `ogImage`** |
+
+- **favicon 用透明的 `avatarSrc`，OG 图用方形的 `iconSrc`，分工别搞反。** 曾按「Google 不支持透明 favicon」把 favicon 切到方形版，那个判断是**错的**，已回退：
+  - cloudflare.com 的 s2 图标实测就是**带透明角的 PNG**，Google 完全能保留透明。
+  - GitHub 的源 `favicon.ico` 有 **46.5% 透明像素**，s2 输出却是填白底的方图 —— 搜索结果里的圆形是 **Google UI 的圆形裁切**，跟图片形状无关。GitHub 的头像文件本身也是方形 JPEG，圆是 CSS `border-radius` 画的。
+  - 所以透明与否既不影响收录，也不影响显示成圆。透明版反而在浏览器 tab 里能跟随明暗背景。
+- OG 图**不要**跟着换成透明版：各社交平台对透明 PNG 的合成底色不一致（白/黑/跟随主题），透明角会在深色卡片上露出突兀边缘。favicon 没这问题。
+- 反向也别搞错：navbar 那个圆形头像**要**用 `avatarSrc`，四角透明是它需要的。
+- `public/favicon.ico`（9.2KB，RGBA，含 16/32/48 三档）由 **`avatar.png`** 生成，本仓库**从来没有过 ico**（`--diff-filter=A` 全历史确认），线上 `/favicon.ico` 长期 404，是新加的。头像换图时**记得重新生成**（没有任何检查会报不一致）：
+  ```bash
+  python -c "from PIL import Image; Image.open('public/images/avatar.png').convert('RGBA').save('public/favicon.ico', sizes=[(16,16),(32,32),(48,48)])"
+  ```
+- **`.ico` 不是给 Google 的**：官方文档只说 Google 读首页 `<link>`，对根路径 `/favicon.ico` 的探测**没有任何说明**，也**没规定多个 icon 声明的优先级**。`.ico` 的价值在浏览器地址栏与会直连根路径的第三方服务。
+- 因此 `BaseLayout.astro` 里三条 icon 声明**顺序有意义**：600×600 PNG 放首位（对齐官方「建议大于 48×48」），`.ico` 次之。`.ico` 的 `sizes` 要列全 `16x16 32x32 48x48` —— 曾错写成 `32x32`，那会谎报它的内容、并在挑大图时与首位声明自相矛盾。
+- `<link rel="icon">` 的 `type` 必须与实际文件匹配（现在是 `image/png`）—— 换源图时最容易漏掉这个属性，写错格式部分客户端会拒绝解析。
+- `public/favicon.svg` 是 `pnpm create astro` 脚手架留下的 **Astro logo**，从 `22f843a init` 起就在、从未被引用，已删。别当成站点图标又加回来。
+- Google 的 favicon **按 hostname 缓存**、只读该 host 首页的 `<link>`，子域各自独立（官方原话：one favicon per site, where a site is defined by the hostname），文档对 301 如何归并 favicon **没有说明**。
+- **「搜索结果看不到头像」的实际根因是 host 不是图片**：用 s2 图标与头像做相关系数比对（1.0=同图），`blog.adclosenn.top` 是 **0.999**（Google 早就抓到了你的头像），而搜索结果标题行显示的 `adclosenn.top` 是 **0.380**（apex 自己的旧图标）。apex 已 301 到 blog 子域，等 Google 重抓收敛。诊断这类问题**先按 host 分别查 s2**，别一上来就改图片。
+- 改 favicon 后要等 Google 重抓首页（官方说法几天到几周），可在 Search Console 用 URL 检查请求编入索引加速。
+
 ### 其他
 
 - 搜索代码用 `rg` 而非 `grep`。

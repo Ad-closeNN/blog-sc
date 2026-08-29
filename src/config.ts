@@ -7,7 +7,23 @@ export const site = {
   url: "https://blog.adclosenn.top",
   locale: "zh_CN",
   language: "zh-CN",
+  /**
+   * 圆形透明头像（600×600 调色板 PNG，约 21% 像素透明）：
+   * 站内 UI（navbar / 友链素材）+ favicon 与 apple-touch-icon 用。
+   *
+   * favicon 刻意用透明版：浏览器 tab 里四角真透明、跟随明暗背景；Google 侧
+   * 会自行填底并套圆形裁切（实测 GitHub 的源 favicon 有 46.5% 透明像素，
+   * s2 输出同样是填白底后的方图，搜索结果里的圆是 Google UI 画的）。
+   */
   avatarSrc: "/images/avatar.png",
+  /**
+   * 方形不透明头像（avatar.png 压白底的展平版）：只给 OG 图用。
+   *
+   * OG 图不能复用 avatarSrc：各社交平台对透明 PNG 的合成底色不一致（白/黑/
+   * 跟随主题），透明角会在深色卡片上露出突兀边缘。favicon 没这问题，别顺手
+   * 把 favicon 也切到这张。
+   */
+  iconSrc: "/images/avatar.jpg",
   homeBanner: {
     src: "/images/banner.webp",
     position: "center",
