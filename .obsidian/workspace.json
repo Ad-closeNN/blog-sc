@@ -11,14 +11,10 @@
             "id": "cba5eea7263c7de6",
             "type": "leaf",
             "state": {
-              "type": "markdown",
-              "state": {
-                "file": "src/content/posts/未命名.md",
-                "mode": "source",
-                "source": false
-              },
+              "type": "empty",
+              "state": {},
               "icon": "lucide-file",
-              "title": "未命名"
+              "title": "新标签页"
             }
           }
         ]
@@ -185,8 +181,11 @@
   },
   "active": "cba5eea7263c7de6",
   "lastOpenFiles": [
-    "public/pic/未命名-1.png",
     "src/content/posts/未命名.md",
+    "public/pic/未命名-2.png",
+    "public/pic/未命名-1.png",
+    "public/pic/未命名-2.png",
+    "public/pic/未命名-1.png",
     "未命名.md",
     "src/content/posts/hCaptcha-recaptchacompat.md",
     "src/content/posts/good.md",
@@ -196,10 +195,6 @@
     "public/pic/hCaptcha-recaptchacompat-2.png",
     "public/pic/hCaptcha-recaptchacompat-1.png",
     "public/pic/Pasted image 20261003195221.png",
-    "public/pic/hCaptcha-recaptchacompat-23.png",
-    "public/pic/hCaptcha-recaptchacompat-22.png",
-    "public/pic/hCaptcha-recaptchacompat-21.png",
-    "public/pic/hCaptcha-recaptchacompat-20.png",
     "src/content/posts/betterstack-axisnow-cdn.md"
   ]
 }
