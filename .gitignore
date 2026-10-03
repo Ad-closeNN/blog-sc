@@ -30,3 +30,4 @@ posts-page.yml
 
 # ZCode 会话产物
 .zcode/
+.obsidian/workspace.json
