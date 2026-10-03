@@ -11,14 +11,10 @@
             "id": "28ba137c56b670eb",
             "type": "leaf",
             "state": {
-              "type": "markdown",
-              "state": {
-                "file": "src/content/posts/betterstack-axisnow-cdn.md",
-                "mode": "source",
-                "source": false
-              },
+              "type": "empty",
+              "state": {},
               "icon": "lucide-file",
-              "title": "betterstack-axisnow-cdn"
+              "title": "新标签页"
             }
           }
         ]
@@ -94,7 +90,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "src/content/posts/betterstack-axisnow-cdn.md",
+                "file": "src/content/posts/hCaptcha-recaptchacompat.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -104,7 +100,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "betterstack-axisnow-cdn 的反向链接列表"
+              "title": "hCaptcha-recaptchacompat 的反向链接列表"
             }
           },
           {
@@ -113,12 +109,12 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "src/content/posts/betterstack-axisnow-cdn.md",
+                "file": "src/content/posts/hCaptcha-recaptchacompat.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "betterstack-axisnow-cdn 的出链列表"
+              "title": "hCaptcha-recaptchacompat 的出链列表"
             }
           },
           {
@@ -156,13 +152,13 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "src/content/posts/betterstack-axisnow-cdn.md",
+                "file": "src/content/posts/hCaptcha-recaptchacompat.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "betterstack-axisnow-cdn 的大纲"
+              "title": "hCaptcha-recaptchacompat 的大纲"
             }
           }
         ]
@@ -185,11 +181,18 @@
   },
   "active": "28ba137c56b670eb",
   "lastOpenFiles": [
-    "public/pic/betterstack-axisnow-cdn-2.png",
-    "public/pic/betterstack-axisnow-cdn-1.png",
-    "public/pic/1-betterstack-axisnow-cdn.png",
-    "public/pic/Pasted image 20261003155200.png",
-    "Pasted image 20261003155102.png",
+    "src/content/posts/hCaptcha-recaptchacompat.md",
+    "src/content/posts/good.md",
+    "public/pic/good-3.png",
+    "public/pic/good-2.png",
+    "public/pic/good-1.png",
+    "public/pic/hCaptcha-recaptchacompat-2.png",
+    "public/pic/hCaptcha-recaptchacompat-1.png",
+    "public/pic/Pasted image 20261003195221.png",
+    "public/pic/hCaptcha-recaptchacompat-23.png",
+    "public/pic/hCaptcha-recaptchacompat-22.png",
+    "public/pic/hCaptcha-recaptchacompat-21.png",
+    "public/pic/hCaptcha-recaptchacompat-20.png",
     "src/content/posts/betterstack-axisnow-cdn.md"
   ]
 }

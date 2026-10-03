@@ -541,6 +541,7 @@ var PasteImageRenamePlugin = class extends import_obsidian2.Plugin {
       const { name: newName } = yield this.deduplicateNewName(inputNewName, file);
       debugLog("deduplicated newName:", newName);
       const originName = file.name;
+      const linkText = this.app.fileManager.generateMarkdownLink(file, sourcePath);
       const newPath = path.join(file.parent.path, newName);
       try {
         yield this.app.fileManager.renameFile(file, newPath);
@@ -552,129 +553,32 @@ var PasteImageRenamePlugin = class extends import_obsidian2.Plugin {
         return;
       }
       const newLinkText = this.app.fileManager.generateMarkdownLink(file, sourcePath);
-      debugLog("rename target", originName, "->", newName, "| generateMarkdownLink:", newLinkText);
-      const replaced = yield this.replaceLinkInEditor(originName, newName, sourcePath);
+      debugLog("replace text", linkText, newLinkText);
+      const editor = this.getActiveEditor();
+      if (!editor) {
+        new import_obsidian2.Notice(`Failed to rename ${newName}: no active editor`);
+        return;
+      }
+      const changes = [];
+      for (let lineNumber = 0; lineNumber < editor.lineCount(); lineNumber++) {
+        const line = editor.getLine(lineNumber);
+        const replacedLine = line.split(linkText).join(newLinkText);
+        if (line === replacedLine) {
+          continue;
+        }
+        debugLog("replace line", lineNumber, line, replacedLine);
+        changes.push({
+          from: { line: lineNumber, ch: 0 },
+          to: { line: lineNumber, ch: line.length },
+          text: replacedLine
+        });
+      }
+      if (changes.length > 0) {
+        editor.transaction({ changes });
+      }
       if (!this.settings.disableRenameNotice) {
-        if (replaced) {
-          new import_obsidian2.Notice(`Renamed ${originName} to ${newName}`);
-        } else {
-          new import_obsidian2.Notice(
-            `Renamed ${originName} to ${newName}, but no link pointing to it was found in the note.`,
-            8e3
-          );
-        }
+        new import_obsidian2.Notice(`Renamed ${originName} to ${newName}`);
       }
-    });
-  }
-  // 把笔记里指向 originName 的链接改成 newName。
-  //
-  // 关键：只替换「文件名」这一段，链接的其余部分（/ 前缀、目录、%20 编码风格、
-  // <> 包裹、title、别名）全部原样保留。不采用 generateMarkdownLink 的输出，
-  // 因为它返回的路径风格可能与笔记里既有的写法不同（例如丢掉前导斜杠），
-  // 直接套用会把 /public/pic/xxx 改成 public/pic/xxx。
-  //
-  // 安全性：只在 ](...) / [[...]] 结构内部改，且仅当文件名完全相同时才改 ——
-  // 输出始终是结构完整的链接；改完文件名即变化，重复调用不会命中（幂等）。
-  replaceLinkInEditor(originName, newName, sourcePath) {
-    return __async(this, null, function* () {
-      const decode = (s) => {
-        try {
-          return decodeURIComponent(s);
-        } catch (e) {
-          return s;
-        }
-      };
-      const encodeLike = (replacement, sample) => {
-        // 保持原链接的编码风格：原文是 %20 就用 %20，是空格就用空格
-        return /%[0-9A-Fa-f]{2}/.test(sample)
-          ? encodeURIComponent(replacement).replace(/%2F/gi, "/")
-          : replacement;
-      };
-      const basenameOf = (linkTarget) =>
-        decode(linkTarget)
-          .replace(/^<|>$/g, "")
-          .split("#")[0]
-          .split("?")[0]
-          .split("/")
-          .pop();
-      const wanted = decode(originName);
-      const newBase = newName;
-      // 在 "dir/旧名.png" 里把文件名换成新名，其余原样
-      const swapBase = (pathPart) => {
-        const idx = pathPart.lastIndexOf("/");
-        const dir = idx === -1 ? "" : pathPart.slice(0, idx + 1);
-        const file = idx === -1 ? pathPart : pathPart.slice(idx + 1);
-        const hashIdx = file.search(/[#?]/);
-        const tail = hashIdx === -1 ? "" : file.slice(hashIdx);
-        return dir + encodeLike(newBase, file) + tail;
-      };
-      const rewrite = (line) => {
-        let out = line.replace(/\]\(([^)\n]*)\)/g, (whole, target2) => {
-          let pathPart = target2.trim();
-          let title = "";
-          const titleMatch = pathPart.match(/\s+("[^"]*"|'[^']*')$/);
-          if (titleMatch) {
-            title = pathPart.slice(titleMatch.index);
-            pathPart = pathPart.slice(0, titleMatch.index);
-          }
-          if (!pathPart || basenameOf(pathPart) !== wanted) {
-            return whole;
-          }
-          return `](${swapBase(pathPart)}${title})`;
-        });
-        out = out.replace(/(\[\[)([^\]\n|]+)(\|[^\]\n]*)?(\]\])/g, (whole, open, linkTarget, alias, close) => {
-          if (basenameOf(linkTarget) !== wanted) {
-            return whole;
-          }
-          return `${open}${swapBase(linkTarget.trim())}${alias || ""}${close}`;
-        });
-        return out;
-      };
-      const applyOnce = () => {
-        const activeFile = this.app.workspace.getActiveFile();
-        if (!activeFile || activeFile.path !== sourcePath) {
-          return false;
-        }
-        const editor = this.getActiveEditor();
-        if (!editor) {
-          return false;
-        }
-        let alreadyDone = false;
-        const changes = [];
-        for (let lineNumber = 0; lineNumber < editor.lineCount(); lineNumber++) {
-          const raw = editor.getLine(lineNumber);
-          const updated = rewrite(raw);
-          if (updated !== raw) {
-            debugLog("replace line", lineNumber, raw, "->", updated);
-            changes.push({
-              from: { line: lineNumber, ch: 0 },
-              to: { line: lineNumber, ch: raw.length },
-              text: updated
-            });
-          } else if (!alreadyDone) {
-            // Obsidian 的 alwaysUpdateLinks 可能已自行改好，此时不该再报「找不到链接」
-            alreadyDone = Array.from(raw.matchAll(/\]\(([^)\n]*)\)/g)).some(
-              (m) => basenameOf(m[1]) === newBase
-            );
-          }
-        }
-        if (changes.length > 0) {
-          editor.transaction({ changes });
-          return true;
-        }
-        return alreadyDone;
-      };
-      if (applyOnce()) {
-        return true;
-      }
-      const deadline = Date.now() + 2e3;
-      while (Date.now() < deadline) {
-        yield new Promise((resolve) => setTimeout(resolve, 150));
-        if (applyOnce()) {
-          return true;
-        }
-      }
-      return false;
     });
   }
   openRenameModal(file, newName, sourcePath) {
