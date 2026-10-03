@@ -1,4 +1,8 @@
 {
   "promptDelete": false,
-  "attachmentFolderPath": "public/pic"
+  "attachmentFolderPath": "/public/pic",
+  "newFileLocation": "folder",
+  "newFileFolderPath": "src/content/posts",
+  "useMarkdownLinks": true,
+  "alwaysUpdateLinks": true
 }
