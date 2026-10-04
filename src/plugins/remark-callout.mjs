@@ -1,7 +1,16 @@
 // @ts-check
 /**
  * remark-callout
- * 把 remark-directive 解析出的容器指令 `:::type[标题] ... :::` 转成 callout。
+ * 把两种写法统一转成 callout：
+ *   1. remark-directive 的容器指令 `:::type[标题] ... :::`
+ *   2. GitHub 块引用式告警 `> [!TYPE]标题 ...`
+ *
+ * 两种写法的语义差异（与 GitHub 对齐）：
+ *   `:::tip[xxx]` + 正文        → 标题 xxx，正文是 :::
+ *   `> [!TIP]xxx` + 后续 `>` 行 → 标题 xxx，正文是后续行
+ *   `> [!TIP]`   + 后续 `>` 行 → 默认标题，整个块（含首段）都是正文
+ * 即 marker 同行有文字就把它当标题（等价 `:::type[xxx]`），没文字就整块当正文。
+ * 判定只发生在「块引用首个节点是以 [!TYPE] 开头的文本段落」时，其余引用原样保留。
  *
  * remark-directive 的 text directive（单冒号 `:name`）会误伤正文里的
  * 合法时间格式（如 `6:40` → textDirective name=40）。该插件在转换容器指令的
@@ -10,8 +19,9 @@
  *
  * 支持类型（大小写不敏感）：tip / note / info / warning / caution / important
  * - 方括号标题 [xxx] 作为 callout 标题；省略时用类型默认标题。
- * - 通过 mdast-util-to-hast 的 data.hName / data.hProperties 钩子让 remark-rehype
- *   输出 <aside class="callout callout-{type}">…，children 正常递归转换。
+ * - 两种写法产出同一套 <aside class="callout callout-{type}">，共用 global.css 样式。
+ * - `> [!TIP]` 写法的标题保留行内格式（`**粗体**`、`code` 等）；`:::tip[xxx]`
+ *   的标题仍按纯文本取（与原先一致）。两者正文的行内格式均正常渲染。
  */
 
 /** @typedef {'tip'|'note'|'info'|'warning'|'caution'|'important'} CalloutType */
@@ -33,6 +43,150 @@ const CALLOUT_META = {
 function normalizeType(raw) {
   const key = String(raw || "").toLowerCase()
   return key in CALLOUT_META ? /** @type {CalloutType} */ (key) : null
+}
+
+/**
+ * GitHub 块引用式告警的 marker token：`[!TYPE]`。
+ * 只匹配 token 本身（不含同行标题），标题交给 splitAdmonitionLine 按行拆。
+ */
+const ADMONITION_RE = /^\[!([A-Za-z]+)\]/
+
+/**
+ * 去掉行内节点首尾空白（只处理 text 节点边界，行内格式节点原样保留）。
+ * @param {any[]} nodes
+ * @returns {any[]}
+ */
+function trimInline(nodes) {
+  const out = nodes.slice()
+  while (out.length && out[0].type === "text" && !String(out[0].value).trim()) {
+    out.shift()
+  }
+  if (out.length && out[0].type === "text") {
+    out[0] = { type: "text", value: String(out[0].value).replace(/^\s+/, "") }
+  }
+  while (
+    out.length &&
+    out[out.length - 1].type === "text" &&
+    !String(out[out.length - 1].value).trim()
+  ) {
+    out.pop()
+  }
+  if (out.length && out[out.length - 1].type === "text") {
+    const last = out.length - 1
+    out[last] = {
+      type: "text",
+      value: String(out[last].value).replace(/\s+$/, ""),
+    }
+  }
+  return out
+}
+
+/**
+ * 把块引用首段按「marker 所在行」拆成标题行内节点与正文行内节点。
+ * 标题 = marker 同一行剩余部分（因此支持 `**粗体**` 等行内格式）；
+ * 正文 = 其余内容。以首个含换行的 text 节点为界：换行前归标题、换行后归正文。
+ * @param {any} paragraph
+ * @param {RegExpMatchArray} matched
+ * @returns {{ titleNodes: any[], bodyNodes: any[] }}
+ */
+function splitAdmonitionLine(paragraph, matched) {
+  const children = paragraph.children
+  // 切掉首节点开头的 `[!TYPE]` token，剩下的即标题行内容
+  children[0].value = String(children[0].value).slice(matched[0].length)
+
+  const titleNodes = []
+  const bodyNodes = []
+  let inBody = false
+  for (const child of children) {
+    if (inBody) {
+      bodyNodes.push(child)
+      continue
+    }
+    if (child.type === "text") {
+      const value = String(child.value ?? "")
+      const nl = value.indexOf("\n")
+      if (nl === -1) {
+        titleNodes.push(child)
+        continue
+      }
+      // 换行即标题行结束：换行前归标题，换行后归正文
+      if (nl > 0) titleNodes.push({ type: "text", value: value.slice(0, nl) })
+      const tail = value.slice(nl + 1)
+      if (tail) bodyNodes.push({ type: "text", value: tail })
+      inBody = true
+      continue
+    }
+    titleNodes.push(child)
+  }
+  return { titleNodes: trimInline(titleNodes), bodyNodes }
+}
+
+/**
+ * 从块引用里识别 GitHub 式告警 marker。
+ * 只认「首个节点是 paragraph、其首个子节点是 text、且 text 以 [!TYPE] 开头」，
+ * 且该文本在原文里没有反斜杠转义（`\[!TIP]` 不触发 —— mdast 的 text.value
+ * 会吃掉反斜杠，只能拿 position 回查源串）。
+ * 匹配基于 text.value 而非源串切片：块引用后续行的 `>` 前缀只存在于源码里，
+ * 按 value 匹配才不会把 `> ` 混进正文。
+ * @param {any} node - blockquote 节点
+ * @param {string} source - 原文
+ * @returns {{ type: CalloutType, paragraph: any, matched: RegExpMatchArray } | null}
+ */
+function matchAdmonition(node, source) {
+  const paragraph = Array.isArray(node.children) ? node.children[0] : null
+  if (!paragraph || paragraph.type !== "paragraph") return null
+  const first = Array.isArray(paragraph.children) ? paragraph.children[0] : null
+  if (!first || first.type !== "text") return null
+  const value = String(first.value ?? "")
+  if (!value.startsWith("[!")) return null
+
+  // 原文该位置是反斜杠 → 转义写法，不识别
+  const offset = first.position?.start?.offset
+  if (typeof offset === "number" && source[offset] === "\\") return null
+
+  const matched = ADMONITION_RE.exec(value)
+  if (!matched) return null
+  const type = normalizeType(matched[1])
+  if (!type) return null
+
+  return { type, paragraph, matched }
+}
+
+/**
+ * 构造 callout 标题段（两种写法共用）。
+ * @param {any[]} children - 标题行内节点
+ * @returns {any}
+ */
+function titleParagraph(children) {
+  return {
+    type: "paragraph",
+    data: { hProperties: { className: ["callout-title"] } },
+    children,
+  }
+}
+
+/**
+ * 由纯文本构造标题段（容器指令写法，标题恒为纯文本）。
+ * @param {string} text
+ * @returns {any}
+ */
+function textTitleParagraph(text) {
+  return titleParagraph([{ type: "text", value: text }])
+}
+
+/**
+ * 把节点标记为 callout：用 mdast-util-to-hast 的 data.hName / data.hProperties
+ * 钩子让 remark-rehype 输出 <aside class="callout callout-{type}">，
+ * children 由默认 handler 正常递归转换。
+ * @param {any} node
+ * @param {CalloutType} type
+ */
+function markAsCallout(node, type) {
+  node.data = node.data || {}
+  node.data.hName = "aside"
+  node.data.hProperties = {
+    className: ["callout", `callout-${type}`],
+  }
 }
 
 /**
@@ -170,22 +324,35 @@ export function remarkCallout() {
         if (type) {
           const { title, rest } = extractLabel(node)
           const meta = CALLOUT_META[type]
-          const titleText = title || meta.title
 
-          // 标题段：放在 callout 正文之前，作为 callout-title
-          const titleParagraph = {
-            type: "paragraph",
-            data: { hProperties: { className: ["callout-title"] } },
-            children: [{ type: "text", value: titleText }],
+          // 标题段放在 callout 正文之前
+          node.children = [
+            textTitleParagraph(title || meta.title),
+            ...rest,
+          ]
+          markAsCallout(node, type)
+        }
+      } else if (node.type === "blockquote") {
+        // GitHub 式 `> [!TYPE]标题` → 同一套 callout
+        const hit = matchAdmonition(node, source)
+        if (hit) {
+          const { type, paragraph, matched } = hit
+          // 按 marker 所在行拆出标题行内节点与正文；标题行内格式（**粗体**等）保留
+          const { titleNodes, bodyNodes } = splitAdmonitionLine(paragraph, matched)
+          if (bodyNodes.length) {
+            paragraph.children = bodyNodes
+          } else {
+            // 该段没有正文（标题独占一行）→ 移除空段，避免渲染出空 <p>
+            node.children.shift()
           }
-
-          // 用 data.hName / data.hProperties 让 remark-rehype 输出 <aside>
-          node.data = node.data || {}
-          node.data.hName = "aside"
-          node.data.hProperties = {
-            className: ["callout", `callout-${type}`],
-          }
-          node.children = [titleParagraph, ...rest]
+          node.children.unshift(
+            titleParagraph(
+              titleNodes.length
+                ? titleNodes
+                : [{ type: "text", value: CALLOUT_META[type].title }]
+            )
+          )
+          markAsCallout(node, type)
         }
       } else if (
         (node.type === "textDirective" || node.type === "leafDirective") &&

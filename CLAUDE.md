@@ -87,6 +87,24 @@ Typical page pattern: frontmatter imports `Layout` + React components → `<Layo
 - 代码字体统一 `var(--font-mono)`（Cascadia Mono），frame 无阴影，激活 tab 橙色指示线在底部（`editorActiveTabIndicatorBottomColor: "#f9826c"`，顶部禁用）。
 - 文章里已有大量 EC 语法代码块，改动代码块渲染务必实机抽查 `custom-frontmatter.md` / `giscus.md` / `kugou-music-download.md`（含行高亮 / ins / collapse）。
 
+### Callout（`src/plugins/remark-callout.mjs`）
+
+支持两种写法，产出**同一套** `<aside class="callout callout-{type}">`，共用 `global.css` 的 `.callout*` 样式（改样式只需一处）：
+
+| 写法 | 标题 | 正文 |
+|---|---|---|
+| `:::tip[xxx]` + 正文 + `:::` | `xxx` | `:::` 内后续内容 |
+| `> [!TIP]xxx` + 后续 `>` 行 | `xxx`（marker 同一行剩余部分） | 后续 `>` 行 |
+| `> [!TIP]` + 后续 `>` 行 | 默认标题（提示/笔记/…） | **整个块**（含首段） |
+
+即 marker 同行有文字就当标题，没文字就整块当正文。类型大小写不敏感：tip / note / info / warning / caution / important。
+
+- **只认「块引用首个节点是以 `[!TYPE]` 开头的文本段落」**：`> 正文 [!TIP]`（不在开头）、`> [!BOGUS]x`（未知类型）、普通引用一律原样渲染成 `<blockquote>`，不会误伤。
+- **转义写法 `\[!TIP]x` 不触发**：mdast 的 `text.value` 会吃掉反斜杠，只能拿 `position.start.offset` 回查源串判断首字符是否为 `\`。
+- 标题按 **`text.value` 而非源串切片**处理：块引用后续行的 `>` 前缀只存在于源码里，按 value 匹配才不会把 `> ` 混进正文（`rawSlice` 的返回值不能直接当正文用）。
+- 标题按「首个含换行的 text 节点」为界切分，所以 `> [!TIP]**粗体**标题` 的**行内格式会保留**（`<strong>` 进 `callout-title`）。而 `:::tip[xxx]` 走 `extractLabel` + `textOf`，标题恒为**纯文本**，`:::tip[**粗体**]` 会显示字面量 —— 两者行为差异是刻意的。
+- 改这个插件务必**两套语法都实机抽查**：`:::tip` 现有用例见 `custom-frontmatter.md` / `giscus.md` / `newtab_link.md`（含 `::github{repo=...}`）。
+
 ### 图片灯箱（`src/components/ImageLightbox.astro`）
 
 - 点击图片区域也关闭灯箱（与遮罩一致），带 `dragMoved` 阈值（3px）区分「拖拽平移」与「点击关闭」。
