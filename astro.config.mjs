@@ -85,6 +85,52 @@ function demoteMarkdownH1() {
   }
 }
 
+/**
+ * 剥离正文里 /public/ 前缀的资源 URL。
+ *
+ * Obsidian 的 fix-public-links 插件会把 `public/xxx` 改写成 `/public/xxx`，
+ * 但 Astro 把 public/ 目录内容复制到站点根，正确 URL 是不带 /public 的
+ * （`public/pic/x.png` → `/pic/x.png`）。多出的 /public 会 404，故构建时剥离。
+ *
+ * 只处理 <img src> 与 <a href> 两个属性，不碰 <code> 等文本节点里的字面量
+ * （如 umami.md 里讲静态资源路径的 `` `/public/datamaps.world.json` ``）。
+ */
+function normalizePublicAssetPaths() {
+  /**
+   * @param {unknown} value
+   */
+  const strip = (value) =>
+    typeof value === "string" && value.startsWith("/public/")
+      ? value.slice("/public".length)
+      : value
+
+  /**
+   * @param {any} tree
+   */
+  return (tree) => {
+    /**
+     * @param {any} node
+     */
+    const visit = (node) => {
+      if (!node || typeof node !== "object") return
+
+      if (node.type === "element" && node.properties) {
+        if (node.tagName === "img" && node.properties.src) {
+          node.properties.src = strip(node.properties.src)
+        } else if (node.tagName === "a" && node.properties.href) {
+          node.properties.href = strip(node.properties.href)
+        }
+      }
+
+      if (Array.isArray(node.children)) {
+        node.children.forEach(visit)
+      }
+    }
+
+    visit(tree)
+  }
+}
+
 export default defineConfig({
   site: siteUrl,
   output: "static",
@@ -148,6 +194,7 @@ export default defineConfig({
           },
         }],
         rehypeRaw,
+        normalizePublicAssetPaths,
         externalLinksTargetBlank,
         demoteMarkdownH1,
       ],
