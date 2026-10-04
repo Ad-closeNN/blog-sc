@@ -129,7 +129,15 @@ Typical page pattern: frontmatter imports `Layout` + React components → `<Layo
 
 ### 内容维护脚本（`scripts/`）
 
-- `summary.js`：为文章生成 AI 摘要，迁移自 blog-fuwari。调 **opencode.ai/zen 免费端点**（`https://opencode.ai/zen/v1/responses`）+ 模型 `deepseek-v4-flash-free`，**无认证 / 无凭据**。结果回写文章 frontmatter 的 `aiSummary` / `aiSummaryModel`。`pnpm summary` 交互选文、`summary:all` 仅补缺、`summary:force` 全量重写。
+- `summary.js`：为文章生成 AI 摘要，迁移自 blog-fuwari。**不绑定任何服务商**，用任意 OpenAI 兼容的 `/chat/completions` 端点。结果回写文章 frontmatter 的 `aiSummary` / `aiSummaryModel`。`pnpm summary` 交互选文、`summary:all` 仅补缺、`summary:force` 全量重写。
+  - **三个配置项都不内置**：`--api_url` / `--api_key` / `--model`。任一缺失时**就地交互提问**（已有参数则跳过，不重复问）；非交互终端（管道/CI）下直接报错而不是静默挂起。刻意不写默认值 —— 服务下线、模型受限、凭据硬编码都会让脚本静默失效（曾内置的 OpenCode Zen 免费模型就是这么废的）。
+  - **`--api_url` 填基地址即可**，脚本自动补 `/chat/completions`（`resolveApiEndpoint`）；已含该路径则原样使用；末尾斜杠、`http://` 都能正确处理，非 http/https 会报错。别在文档里写死某个服务商的完整端点。
+  - **API Key 来源优先级**：`--api_key` > 环境变量（`SUMMARY_API_KEY`，回退 `OPENAI_API_KEY`）> 交互式隐藏输入。环境变量在**模块顶层求值**（`envApiKey`），运行时改 `process.env` 不生效。
+  - 交互输入密钥用 `askSecret`（raw 模式逐字符读、只回显 `*`）。**不要改回 `rl.question` + 覆写 `_writeToOutput`** —— Node 24 的 readline 回显不再走那个私有方法，覆写无效，密钥会原样显示在屏幕上（实测踩过）。
+  - 请求用 `node:http` / `node:https`，**按 URL 协议二选一**（`endpoint.protocol === "http:" ? http : https`），否则 `http://` 地址（如本地 ollama）会握手失败。请求体 `messages: [{ role, content }]` + `max_tokens` + `stream: false`；响应取 `choices[0].message.content`（**响应里可能另有 `reasoning_content`，别取错**）。**不要加 `anthropic-version`** 之类的非 OpenAI 头。
+  - 配置以 `{ endpoint: URL, apiKey, model }` 结构在 `resolveConfig` 里组装后逐层透传（`generateSummary` / `generateMissingSummaries`）。
+  - 参数解析（`parseArguments`）区分**布尔 flag**（`--all`/`--force`/`--help`，收进 Set）与**带值参数**（`--model`/`--api_url`/`--api_key`，模式是 `valueFlags` 集合 + 取下一个 argv，缺值时报错）。**新增带值参数必须同时加进 `valueFlags`**，否则会被当作位置参数（文章名）。
+  - 交互选文（`selectFile`）与 `askSecret` 同用 readline raw 模式，两个必须遵守的坑：`wasRaw` / `wasPaused` 要在 `createInterface()` / `setRawMode(true)` **之前**读（readline 构造函数会立刻把 stdin 设为 raw，之后再读就恢复不回用户终端原本状态）；键盘处理函数（`onKey`）要写成**同一作用域的函数声明**，否则 `cleanup` 引用不到（曾定义在 Promise executor 内部，导致 `ReferenceError: onKey is not defined`）。
 - `clean-unused-pictures.js`：审计 `src/content/posts` 对 `public/pic/` 的引用。**只读 `images:check`** 输出未引用候选；**`images:clean`（`--delete`）才删除**。`pic-allowlist.txt` 是保留名单（每行一个相对 `public/pic/` 路径，支持 `/pic/` 前缀，`#` 注释），写入名单的图片即使未被文章引用也不删。
 - 这两个是独立 Node 脚本，不参与 Astro 构建 / typecheck。
 
