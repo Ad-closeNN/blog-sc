@@ -1,0 +1,59 @@
+---
+import { license, site } from "@/config"
+
+interface Props {
+  title: string
+  slug: string
+  published: Date
+  class?: string
+}
+
+const { title, slug, published, class: className } = Astro.props
+const postUrl = `${site.url}/posts/${slug}/`
+const date = published.toISOString().slice(0, 10)
+---
+
+{
+  license.enable && (
+    <div
+      class:list={[
+        "relative mt-10 overflow-hidden rounded-xl bg-muted px-6 py-5",
+        className,
+      ]}
+    >
+      <div class="font-bold text-foreground/80">{title}</div>
+      <a href={postUrl} class="break-all text-primary hover:underline">
+        {postUrl}
+      </a>
+      <div class="mt-2 flex gap-6">
+        <div>
+          <div class="text-sm text-muted-foreground">作者</div>
+          <div class="line-clamp-2 text-foreground/80">{site.shortName}</div>
+        </div>
+        <div>
+          <div class="text-sm text-muted-foreground">发布于</div>
+          <div class="line-clamp-2 text-foreground/80">{date}</div>
+        </div>
+        <div>
+          <div class="text-sm text-muted-foreground">许可协议</div>
+          <a
+            href={license.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="line-clamp-2 text-primary hover:underline"
+          >
+            {license.name}
+          </a>
+        </div>
+      </div>
+      <svg
+        aria-hidden="true"
+        viewBox="0 0 496 512"
+        class="pointer-events-none absolute top-1/2 right-6 size-60 -translate-y-1/2 text-foreground/5"
+        fill="currentColor"
+      >
+        <path d="M245.8 214.9l-33.2 17.3c-9.4-19.6-25.2-20-27.4-20-22.2 0-33.3 14.6-33.3 43.9 0 23.5 9.2 43.8 33.3 43.8 14.5 0 24.7-7.1 30.6-21.3l30.6 15.5c-6.2 11.6-26.5 39.2-62.8 39.2-27.7 0-50.9-16.1-61.6-41.5-4.3-10.1-6.4-21.3-6.4-35.7 0-14 2.3-25.6 6.8-35.9 10.4-23.8 31.1-39.1 61.2-39.1 36.3 0 52.8 22.4 58.7 33.7zm110.4 0l-32.7 17.3c-9.5-19.8-25.7-20-27.9-20-22.1 0-33.2 14.6-33.2 43.9 0 23.5 9.2 43.8 33.2 43.8 14.5 0 24.7-7.1 30.5-21.3l31 15.5c-2 3.8-21.3 39.2-62.8 39.2-27.8 0-50.8-16.1-61.5-41.5-4.3-10.1-6.4-21.3-6.4-35.7 0-14 2.3-25.6 6.8-35.9 10.4-23.8 31-39.1 61.2-39.1 36.2 0 52.7 22.4 58.8 33.7zM248 8C111 8 0 119.1 0 256s111 248 248 248 248-111 248-248S385 8 248 8zm0 450.8c-112 0-202.8-90.8-202.8-202.8S136 53.2 248 53.2 450.8 144 450.8 256 360 458.8 248 458.8z" />
+      </svg>
+    </div>
+  )
+}

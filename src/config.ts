@@ -79,6 +79,15 @@ export const links = {
   },
 } as const
 
+// ==================== license ====================
+
+/** 文章底部版权块；enable:false 时不渲染 */
+export const license = {
+  enable: true,
+  name: "CC BY-NC-SA 4.0",
+  url: "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+} as const
+
 // ==================== notice ====================
 
 /**

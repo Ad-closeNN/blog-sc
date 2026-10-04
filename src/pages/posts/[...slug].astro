@@ -1,6 +1,7 @@
 ---
 import BackToPostsBar from "@/components/BackToPostsBar.astro"
 import Comments from "@/components/Comments.astro"
+import License from "@/components/License.astro"
 import PostMeta from "@/components/PostMeta.astro"
 import SidebarStats from "@/components/SidebarStats"
 import { Badge } from "@/components/ui/badge"
@@ -201,6 +202,12 @@ const jsonLd = [
         <div class="prose">
           <Content />
         </div>
+
+        <License
+          title={post.data.title}
+          slug={post.id}
+          published={post.data.published}
+        />
 
         <nav
           class="mt-12 flex flex-col gap-3 border-t border-border pt-8 sm:flex-row sm:justify-between"
