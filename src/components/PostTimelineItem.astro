@@ -1,0 +1,75 @@
+---
+import PostMeta from "@/components/PostMeta.astro"
+import { Badge } from "@/components/ui/badge"
+import {
+  countWordsInMarkdown,
+  getPostCover,
+  postHref,
+  taxonomySlug,
+  type Post,
+} from "@/lib/posts"
+import { TagIcon } from "lucide-react"
+
+type Props = {
+  post: Post
+}
+
+const { post } = Astro.props
+const href = postHref(post.id)
+const cover = getPostCover(post)
+const words = countWordsInMarkdown(post.body ?? "")
+---
+
+<li
+  class="post-timeline-item group"
+  role="listitem"
+  data-tags={post.data.tags.map((tag) => taxonomySlug(tag)).join(" ")}
+>
+  <span class="post-timeline-dot" aria-hidden="true"></span>
+  <a href={href} class="post-timeline-card">
+    {
+      cover && (
+        <div class="post-timeline-cover" style={`--cover-url: url('${cover}')`}>
+          <img
+            src={cover}
+            alt={post.data.title}
+            loading="lazy"
+            class="post-timeline-cover-img"
+          />
+        </div>
+      )
+    }
+    <div class="post-timeline-card-content">
+      <div class="post-timeline-meta-row">
+        <PostMeta post={post} variant="card" words={words} />
+        {post.data.pinned && <Badge variant="secondary">置顶</Badge>}
+        {post.data.outdated && <Badge variant="destructive">已失效</Badge>}
+      </div>
+      <h3 class="post-timeline-title m-0 text-base leading-snug font-semibold">
+        {post.data.title}
+      </h3>
+      {
+        post.data.description && (
+          <p class="m-0 line-clamp-2 text-sm leading-relaxed text-muted-foreground">
+            {post.data.description}
+          </p>
+        )
+      }
+      {
+        post.data.tags.length > 0 && (
+          <div class="post-timeline-tags">
+            <TagIcon className="post-meta-icon" aria-hidden="true" />
+            {post.data.tags.map((tag) => (
+              <span
+                class="post-timeline-tag"
+                data-filter-tag={taxonomySlug(tag)}
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+        )
+      }
+    </div>
+  </a>
+</li>

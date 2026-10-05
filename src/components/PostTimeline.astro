@@ -1,29 +1,48 @@
 ---
-import PostMeta from "@/components/PostMeta.astro"
-import { Badge } from "@/components/ui/badge"
-import {
-  countWordsInMarkdown,
-  getPostCover,
-  groupPostsByMonth,
-  postHref,
-  taxonomySlug,
-  type Post,
-} from "@/lib/posts"
-import { TagIcon } from "lucide-react"
+import PostTimelineItem from "@/components/PostTimelineItem.astro"
+import { groupPostsByMonth, type Post } from "@/lib/posts"
 
 type Props = {
   posts: Post[]
 }
 
 const { posts } = Astro.props
-const groups = groupPostsByMonth(posts)
+// 真置顶：置顶文章从月份分组里拆出，单独成区置顶展示。
+// 只改排序不够 —— 时间线按月份分组，置顶的旧文章会被分进它自己的月份组。
+const pinnedPosts = posts.filter((post) => post.data.pinned)
+const regularPosts = posts.filter((post) => !post.data.pinned)
+const groups = groupPostsByMonth(regularPosts)
 ---
 
 {
-  groups.length === 0 ? (
+  posts.length === 0 ? (
     <p class="text-muted-foreground">暂无文章。</p>
   ) : (
     <div class="post-timeline" role="list">
+      {pinnedPosts.length > 0 && (
+        <section class="post-timeline-month is-pinned" aria-label="置顶文章">
+          <div class="post-timeline-rail" aria-hidden="true">
+            <span class="post-timeline-dot-month" />
+            <span class="post-timeline-line" />
+          </div>
+
+          <div class="post-timeline-body">
+            <h2 class="post-timeline-month-title flex items-center gap-2 font-mono text-xs font-semibold tracking-[0.08em] text-muted-foreground uppercase">
+              <span>置顶</span>
+              <span class="font-sans text-[11px] font-normal opacity-60">
+                ({pinnedPosts.length})
+              </span>
+            </h2>
+
+            <ul class="post-timeline-list m-0 list-none p-0">
+              {pinnedPosts.map((post) => (
+                <PostTimelineItem post={post} />
+              ))}
+            </ul>
+          </div>
+        </section>
+      )}
+
       {groups.map((group) => (
         <section
           class="post-timeline-month"
@@ -46,77 +65,9 @@ const groups = groupPostsByMonth(posts)
             </h2>
 
             <ul class="post-timeline-list m-0 list-none p-0">
-              {group.posts.map((post) => {
-                const href = postHref(post.id)
-                const cover = getPostCover(post)
-                const words = countWordsInMarkdown(post.body ?? "")
-                return (
-                  <li
-                    class="post-timeline-item group"
-                    role="listitem"
-                    data-tags={post.data.tags
-                      .map((tag) => taxonomySlug(tag))
-                      .join(" ")}
-                    data-category={
-                      post.data.category
-                        ? taxonomySlug(post.data.category)
-                        : undefined
-                    }
-                  >
-                    <span class="post-timeline-dot" aria-hidden="true" />
-                    <a href={href} class="post-timeline-card">
-                      {cover && (
-                        <div
-                          class="post-timeline-cover"
-                          style={`--cover-url: url('${cover}')`}
-                        >
-                          <img
-                            src={cover}
-                            alt={post.data.title}
-                            loading="lazy"
-                            class="post-timeline-cover-img"
-                          />
-                        </div>
-                      )}
-                      <div class="post-timeline-card-content">
-                        <div class="post-timeline-meta-row">
-                          <PostMeta post={post} variant="card" words={words} />
-                          {post.data.pinned && (
-                            <Badge variant="secondary">置顶</Badge>
-                          )}
-                          {post.data.outdated && (
-                            <Badge variant="destructive">已失效</Badge>
-                          )}
-                        </div>
-                        <h3 class="post-timeline-title m-0 text-base leading-snug font-semibold">
-                          {post.data.title}
-                        </h3>
-                        {post.data.description && (
-                          <p class="m-0 line-clamp-2 text-sm leading-relaxed text-muted-foreground">
-                            {post.data.description}
-                          </p>
-                        )}
-                        {post.data.tags.length > 0 && (
-                          <div class="post-timeline-tags">
-                            <TagIcon
-                              className="post-meta-icon"
-                              aria-hidden="true"
-                            />
-                            {post.data.tags.map((tag) => (
-                              <span
-                                class="post-timeline-tag"
-                                data-filter-tag={taxonomySlug(tag)}
-                              >
-                                {tag}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </a>
-                  </li>
-                )
-              })}
+              {group.posts.map((post) => (
+                <PostTimelineItem post={post} />
+              ))}
             </ul>
           </div>
         </section>

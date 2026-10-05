@@ -1,24 +1,41 @@
 ---
-import {
-  formatShortDate,
-  groupPostsByYear,
-  postHref,
-  type Post,
-} from "@/lib/posts"
+import PostArchiveItem from "@/components/PostArchiveItem.astro"
+import { groupPostsByYear, type Post } from "@/lib/posts"
 
 type Props = {
   posts: Post[]
 }
 
 const { posts } = Astro.props
-const groups = groupPostsByYear(posts)
+// 真置顶：置顶文章从年份分组里拆出、固定在最前（与首页 PostTimeline 同思路）。
+const pinnedPosts = posts.filter((post) => post.data.pinned)
+const regularPosts = posts.filter((post) => !post.data.pinned)
+const groups = groupPostsByYear(regularPosts)
 ---
 
 {
-  groups.length === 0 ? (
+  posts.length === 0 ? (
     <p class="archive-empty">暂无文章。</p>
   ) : (
     <div class="post-archive">
+      {pinnedPosts.length > 0 && (
+        <section class="post-archive-year is-pinned" aria-label="置顶文章">
+          <header class="post-archive-year-header">
+            <h2>置顶</h2>
+            <span class="post-archive-rail" aria-hidden="true">
+              <span class="post-archive-year-marker" />
+            </span>
+            <span class="post-archive-count">{pinnedPosts.length} 篇</span>
+          </header>
+
+          <ol class="post-archive-list">
+            {pinnedPosts.map((post) => (
+              <PostArchiveItem post={post} />
+            ))}
+          </ol>
+        </section>
+      )}
+
       {groups.map((group) => (
         <section
           class="post-archive-year"
@@ -34,30 +51,7 @@ const groups = groupPostsByYear(posts)
 
           <ol class="post-archive-list">
             {group.posts.map((post) => (
-              <li class="post-archive-item">
-                <a class="post-archive-link" href={postHref(post.id)}>
-                  <time datetime={post.data.published.toISOString()}>
-                    {formatShortDate(post.data.published)}
-                  </time>
-                  <span class="post-archive-rail" aria-hidden="true">
-                    <span class="post-archive-dot" />
-                  </span>
-                  <span class="post-archive-title">
-                    {post.data.pinned && (
-                      <span class="post-archive-pill is-pinned">置顶</span>
-                    )}
-                    {post.data.outdated && (
-                      <span class="post-archive-pill is-outdated">已失效</span>
-                    )}
-                    <span class="post-archive-title-text">{post.data.title}</span>
-                  </span>
-                  {post.data.tags.length > 0 && (
-                    <span class="post-archive-tags">
-                      {post.data.tags.map((tag) => `#${tag}`).join(" ")}
-                    </span>
-                  )}
-                </a>
-              </li>
+              <PostArchiveItem post={post} />
             ))}
           </ol>
         </section>

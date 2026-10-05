@@ -1,0 +1,34 @@
+---
+import { formatShortDate, postHref, type Post } from "@/lib/posts"
+
+type Props = {
+  post: Post
+}
+
+const { post } = Astro.props
+---
+
+<li class="post-archive-item">
+  <a class="post-archive-link" href={postHref(post.id)}>
+    <time datetime={post.data.published.toISOString()}>
+      {formatShortDate(post.data.published)}
+    </time>
+    <span class="post-archive-rail" aria-hidden="true">
+      <span class="post-archive-dot" />
+    </span>
+    <span class="post-archive-title">
+      {post.data.pinned && (
+        <span class="post-archive-pill is-pinned">置顶</span>
+      )}
+      {post.data.outdated && (
+        <span class="post-archive-pill is-outdated">已失效</span>
+      )}
+      <span class="post-archive-title-text">{post.data.title}</span>
+    </span>
+    {post.data.tags.length > 0 && (
+      <span class="post-archive-tags">
+        {post.data.tags.map((tag) => `#${tag}`).join(" ")}
+      </span>
+    )}
+  </a>
+</li>

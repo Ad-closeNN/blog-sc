@@ -1295,6 +1295,14 @@ button.home-pagination-page:active {
   padding-left: 2.25rem;
 }
 
+/* 置顶区：从月份分组拆出、固定在最前，用主色点 + 底色略作区分 */
+.post-timeline-month.is-pinned .post-timeline-dot-month {
+  background: var(--primary);
+  box-shadow:
+    0 0 0 3px var(--background),
+    0 0 12px color-mix(in oklch, var(--primary) 70%, transparent);
+}
+
 .post-timeline-rail {
   position: absolute;
   left: 0;
@@ -1613,6 +1621,13 @@ main.is-archive-page {
   border-radius: 999px;
   outline: 3px solid var(--primary);
   outline-offset: -2px;
+}
+
+/* 置顶区：「置顶」替代年份标题，与年份字号一致；区分靠条目上的置顶徽章，
+   标题不再单独着色（--primary 在此主题下接近正文色，区分度反而更弱） */
+.post-archive-year.is-pinned h2 {
+  font-size: 1.05rem;
+  letter-spacing: 0.02em;
 }
 
 .post-archive-count {
