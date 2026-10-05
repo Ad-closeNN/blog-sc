@@ -246,7 +246,7 @@ if (r < totalPages) pages.push(totalPages)
       else if (target.closest("[data-pagination-next]")) go(current + 1)
     })
 
-    // Tag / 分类变化后：以新的结果集从第 1 页重新分页，不能留在原第 N 页容器。
+    // Tag 变化后：以新的结果集从第 1 页重新分页，不能留在原第 N 页容器。
     document.addEventListener("timeline-filter:changed", () => {
       current = 1
       apply()

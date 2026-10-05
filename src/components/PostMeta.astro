@@ -9,7 +9,6 @@ import {
 import {
   CalendarIcon,
   FileTextIcon,
-  FolderIcon,
   RotateCwIcon,
 } from "lucide-react"
 
@@ -46,15 +45,6 @@ const updatedText =
         <RotateCwIcon className="post-meta-icon" aria-hidden="true" />
         <span class="sr-only">更新于</span>
         <time datetime={updated!.toISOString()}>{updatedText}</time>
-      </span>
-    )
-  }
-
-  {
-    post.data.category && (
-      <span class="post-meta-item">
-        <FolderIcon className="post-meta-icon" aria-hidden="true" />
-        <span>{post.data.category}</span>
       </span>
     )
   }

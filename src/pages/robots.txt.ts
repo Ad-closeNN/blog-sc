@@ -7,7 +7,6 @@ const sitemapUrl = new URL("/sitemap-index.xml", site.url).toString()
 const body = `User-agent: *
 Allow: /
 Disallow: /?tag=
-Disallow: /?cat=
 
 Disallow: /search-index.json
 

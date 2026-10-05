@@ -5,7 +5,6 @@ tags:
   - CDN
   - 网站
 description: 记录一下用 Axis CDN 加速 Better Stack 状态页，加快在中国大陆访问的首屏加载速度
-category: 记录
 aiSummary: 本文介绍了用 AxisNow CDN 回源加速 Better Stack 状态页的方法，涵盖自定义域名、CNAME、回源与 CORS 配置，可提升中国大陆首屏加载速度。
 aiSummaryModel: deepseek-v4.1-flash
 ---

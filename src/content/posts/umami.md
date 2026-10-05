@@ -4,7 +4,6 @@ published: 2025-08-07
 tags: ["自行部署"]
 description: Umami 是一个精美的网站统计分析工具，我们可以自托管它以解除官方限制
 image: /pic/umami-screenshot.png
-category: 教程
 draft: false
 aiSummary: "本文介绍了自托管 Umami 的整体思路、所需条件、以 Neon/Netlify 为例的具体部署步骤，以及登录与注意事项，帮助搭建独立的网站统计工具。"
 aiSummaryModel: "gpt-5-nano"

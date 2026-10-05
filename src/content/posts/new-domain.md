@@ -5,7 +5,6 @@ pinned: true
 tags: ["域名"]
 description: 获得了一个新域名 *这使我充满了决心
 image: /pic/domain-inlist-adclosenn.top.png
-category: 记录
 draft: false
 aiSummary: "本文介绍了作者通过购买 .top 域名并搭建博客的过程，比较不同域名注册商和支付体验，分享域名被 XYZ 服务器暂停、解封的经历以及教训与使用场景。"
 aiSummaryModel: "gpt-5-nano"

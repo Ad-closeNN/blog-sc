@@ -118,7 +118,7 @@ export type Taxonomy = {
 }
 
 /**
- * 将 tag / category 名称转成 URL slug：
+ * 将 tag 名称转成 URL slug：
  * - 统一小写
  * - 空格 / 下划线 → 连字符
  * - 保留中英文与数字，其余字符去除
@@ -135,18 +135,13 @@ export function taxonomySlug(name: string) {
     .replace(/^-+|-+$/g, "")
 }
 
-/** 聚合全部 tag 与 category，统计各篇数并按「篇数降序、名称升序」排序 */
+/** 聚合全部 tag，统计各篇数并按「篇数降序、名称升序」排序 */
 export function getTaxonomies(posts: Post[]) {
   const tagMap = new Map<string, number>()
-  const categoryMap = new Map<string, number>()
 
   for (const post of posts) {
     for (const tag of post.data.tags) {
       tagMap.set(tag, (tagMap.get(tag) ?? 0) + 1)
-    }
-    const category = post.data.category
-    if (category) {
-      categoryMap.set(category, (categoryMap.get(category) ?? 0) + 1)
     }
   }
 
@@ -157,7 +152,7 @@ export function getTaxonomies(posts: Post[]) {
         (a, b) => b.count - a.count || a.name.localeCompare(b.name, "zh-CN")
       )
 
-  return { tags: toList(tagMap), categories: toList(categoryMap) }
+  return { tags: toList(tagMap) }
 }
 
 /**

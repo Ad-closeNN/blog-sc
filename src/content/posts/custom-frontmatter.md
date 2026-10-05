@@ -4,7 +4,6 @@ published: 2025-08-13
 tags: ["教程", "网站"]
 description: 如果你想要在 Astro 的 Makdown Frontmatter 中自定义参数，布尔值或字符串，实现直接开关或更改某样组件，可以这样做
 image: "/pic/custom-frontmatter-cover.svg"
-category: 教程
 showcover: false
 customcover: /pic/custom-frontmatter-customcover.svg
 aiSummary: "本文介绍了在 Astro/Fuwari 博客中，通过在 Markdown 顶部自定义前置参数（如 draft、image、customcover、showcover 等）来灵活控制文章头图的显示与替换，并给出在前端模板中按条件渲染头图的实现方法、示例代码及配置要点，帮助提升博客主页与文章内页头图的可控性与个性化展示。"

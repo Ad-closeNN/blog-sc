@@ -4,7 +4,6 @@ published: 2025-08-11
 tags: ["邮箱", "域名"]
 description: 通过阿里云免费企业邮箱获得一个类似于 admin@github.com 类型的域名邮箱，可以接收也能发送邮件
 image: /pic/aliyun-email-mxcheck.png
-category: 教程
 draft: false
 aiSummary: "本文介绍了如何利用阿里云免费企业邮箱，用自有域名收发邮件的流程与注意事项，以及从域名解析到管理员设置、MX/DKIM验证等前置配置的要点和实际使用路径。"
 aiSummaryModel: "gpt-5-nano"

@@ -64,12 +64,10 @@ export const GET: APIRoute = async (context) => {
       link: postHref(post.id),
       description: postDescription(post),
       pubDate: post.data.published,
-      // 先 trim 再去重，避免「教程」与「教程 」被当成两个分类
+      // 先 trim 再去重，避免「教程」与「教程 」被当成两个标签
       categories: [
         ...new Set(
-          [...post.data.tags, post.data.category ?? ""]
-            .map((name) => name.trim())
-            .filter(Boolean)
+          post.data.tags.map((name) => name.trim()).filter(Boolean)
         ),
       ],
       content: `${coverHtml}${body}`,

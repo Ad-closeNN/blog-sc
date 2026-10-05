@@ -12,7 +12,6 @@ const posts = defineCollection({
     description: z.string().optional().default(""),
     image: z.string().optional().default(""),
     tags: z.array(z.string()).optional().default([]),
-    category: z.string().optional().nullable().default(""),
     showcover: z.boolean().optional().default(true),
     customcover: z.string().optional().default(""),
     pinned: z.boolean().optional().default(false),

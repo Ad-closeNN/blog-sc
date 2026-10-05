@@ -6,7 +6,6 @@ description: 原版 Astro（包括 Fuwari） 中，打开外部链接是在当�
 image: /pic/newtab-link-npm-plugin-info-1.png
 customcover: /pic/newtab-link-npm-plugin-info-2.png
 showcover: false
-category: 教程
 aiSummary: "本文介绍了如何使用 rehype-external-links 插件，在 Astro 项目中将文章内外部链接统一设置为在新标签页打开，包含安装与在配置中的具体实现要点与示例。"
 aiSummaryModel: "gpt-5-nano"
 ---

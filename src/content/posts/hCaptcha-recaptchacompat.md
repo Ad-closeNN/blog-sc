@@ -4,7 +4,6 @@ published: 2025-08-13
 tags: ["网站", "验证"]
 description: 一次出3个 hCaptcha？瞧瞧你干的好事！
 image: /pic/hCaptcha-localhost-errkey.png
-category: 记录
 aiSummary: "本文介绍了在同时使用 Google reCaptcha 与 hCaptcha 时，hCaptcha 会尝试兼容导致界面混乱的情况，并给出通过将脚本 URL 加上 recaptchacompat=off 关闭兼容化的简单解决方法。"
 aiSummaryModel: "gpt-5-nano"
 ---

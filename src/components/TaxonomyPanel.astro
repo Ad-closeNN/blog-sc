@@ -6,19 +6,17 @@ type Props = {
 }
 
 const { posts } = Astro.props
-const { tags, categories } = getTaxonomies(posts)
+const { tags } = getTaxonomies(posts)
 ---
 
-<aside class="flex flex-col gap-6" aria-label="标签与分类">
+<aside class="flex flex-col gap-6" aria-label="标签">
   <section class="rounded-xl border border-border bg-card p-4">
     <h2
       class="mb-3 font-mono text-[0.7rem] font-semibold tracking-[0.06em] text-muted-foreground uppercase"
     >
-      <a href="/tags/" class="transition-colors hover:text-primary">
-        标签 Tags
-      </a>
+      标签 Tags
     </h2>
-    <div class="flex flex-wrap gap-1.5" data-filter-group data-param="tag">
+    <div class="flex flex-wrap gap-1.5" data-filter-group>
       {
         tags.map((tag) => (
           <button
@@ -27,7 +25,7 @@ const { tags, categories } = getTaxonomies(posts)
             aria-pressed="false"
             class="taxonomy-filter-item inline-flex items-center gap-1 rounded-full border border-border bg-muted/60 px-2.5 py-0.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           >
-            #{tag.name}
+            {tag.name}
             <span
               data-count
               class="text-[0.65rem] text-muted-foreground/70 tabular-nums"
@@ -38,38 +36,6 @@ const { tags, categories } = getTaxonomies(posts)
         ))
       }
     </div>
-  </section>
-
-  <section class="rounded-xl border border-border bg-card p-4">
-    <h2
-      class="mb-2 font-mono text-[0.7rem] font-semibold tracking-[0.06em] text-muted-foreground uppercase"
-    >
-      <a href="/categories/" class="transition-colors hover:text-primary">
-        分类 Categories
-      </a>
-    </h2>
-    <ul class="flex flex-col" data-filter-group data-param="cat">
-      {
-        categories.map((category) => (
-          <li>
-            <button
-              type="button"
-              data-filter={category.slug}
-              aria-pressed="false"
-              class="taxonomy-filter-item flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-            >
-              <span class="truncate">{category.name}</span>
-              <span
-                data-count
-                class="taxonomy-count-badge rounded-full bg-muted px-1.5 text-[0.65rem] tabular-nums"
-              >
-                {category.count}
-              </span>
-            </button>
-          </li>
-        ))
-      }
-    </ul>
   </section>
 </aside>
 
@@ -83,15 +49,9 @@ const { tags, categories } = getTaxonomies(posts)
     border-color: var(--foreground);
     color: var(--background);
   }
-  /* 选中态：数量与主体一起反色。
-     - tag 的数字是纯文字（无底），反成浅色，与 chip 主体一致
-     - category 的数字带圆底（.taxonomy-count-badge），圆底反成浅色、数字用深色 */
+  /* 选中态：tag 的数字是纯文字（无底），随主体一起反成浅色 */
   .taxonomy-filter-item[aria-pressed="true"] [data-count] {
     color: var(--background);
-  }
-  .taxonomy-filter-item[aria-pressed="true"] .taxonomy-count-badge {
-    color: var(--foreground);
-    background: var(--background);
   }
 </style>
 
@@ -102,12 +62,7 @@ const { tags, categories } = getTaxonomies(posts)
     document
       .querySelectorAll<HTMLElement>("[data-filter-group]")
       .forEach((group) => {
-        const paramKey = group.getAttribute("data-param") ?? ""
-        initTimelineFilter({
-          filterEl: group,
-          paramKey,
-          dataAttr: paramKey === "tag" ? "data-tags" : "data-category",
-        })
+        initTimelineFilter({ filterEl: group })
       })
   }
 

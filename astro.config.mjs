@@ -161,11 +161,8 @@ export default defineConfig({
       },
     }),
     react(),
-    sitemap({
-      // /tags/ 与 /categories/ 均为 noindex 筛选页，不进 sitemap
-      filter: (page) =>
-        !page.endsWith("/tags/") && !page.endsWith("/categories/"),
-    }),
+    // 站内已无 noindex 页面，无需 sitemap filter（曾用于排除 /tags/ 筛选页）
+    sitemap(),
   ],
   markdown: {
     processor: unified({
