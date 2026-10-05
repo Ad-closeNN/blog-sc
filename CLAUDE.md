@@ -153,16 +153,16 @@ Typical page pattern: frontmatter imports `Layout` + React components → `<Layo
 
 - 首页文章列表是**客户端 JS 分页**（`src/components/HomePagination.astro`），窗口算法同 Fuwari：当前页 ±2 共 5 个页码，两端收缩为 `1 … n … N`。frontmatter 与切换时的客户端重渲染用**同一份**窗口算法（注释标注「与组件 frontmatter 同源」），改算法两处同步。
 - **筛选与分页的职责分离（易踩坑）**：筛选器（`src/lib/timeline-filter.ts`）**只写 `data-filter-hidden` 标记，不碰 `item.hidden`**；`HomePagination.astro` 是**唯一**负责 `item.hidden` 的地方，基于未被筛选标记的文章重新切片。改任一方都不能破坏这个分工。
-- 筛选 / Tag / 分类变化后**从第 1 页重新分页**（`cf6a239`），不能留在原第 N 页容器。
+- Tag 筛选变化后**从第 1 页重新分页**（`cf6a239`），不能留在原第 N 页容器。
 - 第 2 页起 navbar 面包屑切到「首页 / N/总页」，回第 1 页恢复品牌名。
 - `/posts/` 是按年归档（`src/components/PostArchive.astro` + `groupPostsByYear` from `src/lib/posts.ts`），不是列表。
 
 ### robots.txt（`src/pages/robots.txt.ts`）
 
 - 是**端点不是静态文件**，`public/robots.txt` 已删（同路径静态文件会和页面路由冲突）。Sitemap 行从 `site.url` 派生，换域名只改 `config.ts` 一处。
-- **`/tags/` `/categories/` 绝不能在 robots.txt 里 `Disallow`**：两页已带 `<meta name="robots" content="noindex, follow">`（`BaseLayout.astro` 的 `noindex` prop）。Google 明确要求「noindex 生效的前提是页面未被 robots.txt 拦住」——拦了爬虫就读不到 noindex，加上首页 `TaxonomyPanel` 有内链指过去，反而会被 URL-only 收录（标题位显示裸 URL）。这是修过的坑，别再加回来。
-- 首页参数变体（`timeline-filter.ts` 的 `replaceState` 写的 `?tag=` / `?cat=`）用**根锚定**规则 `Disallow: /?tag=`，**不要写成 `/*?tag=`**——通配版会连带拦住 `/tags/?tag=x`，把上面那个问题原样重演。
-- `sitemap` 的 filter（`astro.config.mjs`）已排除这两页，与 noindex 一致，保持。
+- 首页参数变体（`timeline-filter.ts` 的 `replaceState` 写的 `?tag=`）用**根锚定**规则 `Disallow: /?tag=`，**不要写成 `/*?tag=`**——通配版会拦住任何路径下的 `?tag=`（例如将来某个页面自己用同名参数），根锚定只作用于首页。
+- **若将来再加带 `noindex` 的页面：绝不能在 robots.txt 里 `Disallow` 它。** Google 要求「noindex 生效的前提是页面未被 robots.txt 拦住」——拦了爬虫就读不到 noindex，加上站内有内链指过去，反而会被 URL-only 收录（标题位显示裸 URL）。这是踩过的坑（原 `/tags/`、`/categories/` 两个筛选页，均已删除），别重演。
+- `sitemap()` 目前不带 filter：站内已无 noindex 页。将来若加回 noindex 页，需同步在 `astro.config.mjs` 加 filter 排除，两者保持一致。
 
 ### 头像双份：`avatarSrc` 与 `iconSrc`（`src/config.ts`）
 

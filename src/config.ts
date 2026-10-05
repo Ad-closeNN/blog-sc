@@ -44,6 +44,33 @@ export const navigation = {
   friends: { label: "友链", href: "/friends/" },
 } as const
 
+/**
+ * 服务状态徽章（Better Stack 提供）：桌面端嵌在 navbar 最右侧，
+ * 移动端收进抽屉。
+ *
+ * 主题跟随：徽章是跨域 iframe，拿不到本站的 .dark 也无法注入 CSS。
+ * StatusBadge 渲染 light / dark 两个 frame（src 由这里的 theme 参数
+ * 改写而来、渲染后永不再变），由 global.css 按 .dark 切换 opacity ——
+ * 切主题零重载零闪烁。
+ */
+export const statusBadge = {
+  enable: true,
+  /** iframe 源地址；theme 参数会被 light/dark 各取一次作为两个 frame 的 src */
+  src: "https://status.adclosenn.top/badge?theme=dark",
+  /** 徽章点击后跳转的状态页 */
+  href: "https://status.adclosenn.top",
+  label: "服务状态",
+  /**
+   * iframe 尺寸。宽度刻意不用官方示例的 250：
+   * 徽章内容在 iframe 内是**左对齐**的，而各状态文案宽 94–164px，
+   * 250 会在右侧留下约 86px 空白，视觉上像是没跟 navbar 右边缘对齐。
+   * 185 恰好容下最长的「所有服务均正常运行」(164px) 并留余量，
+   * 跨域无法注入 CSS，只能靠收紧 iframe 来贴合内容。
+   */
+  width: 185,
+  height: 30,
+} as const
+
 export const navigationItems = Object.values(navigation)
 
 export const links = {

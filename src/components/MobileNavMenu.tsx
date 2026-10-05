@@ -1,4 +1,11 @@
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react"
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type ReactNode,
+} from "react"
 import {
   BookOpenIcon,
   HomeIcon,
@@ -35,28 +42,34 @@ import { cn } from "@/lib/utils"
 type Props = {
   pathname: string
   headings?: Heading[]
+  /** Astro slot 传入的静态节点（如服务状态徽章 iframe），渲染在搜索区之后 */
+  statusBadge?: ReactNode
 }
 
-export default function MobileNavMenu({ pathname, headings = [] }: Props) {
+export default function MobileNavMenu({
+  pathname,
+  headings = [],
+  statusBadge,
+}: Props) {
   const filteredHeadings = useMemo(
     () => headings.filter((h) => h.depth >= 2 && h.depth <= 4),
-    [headings],
+    [headings]
   )
   const headingKey = useMemo(
     () => filteredHeadings.map((h) => h.slug).join("|"),
-    [filteredHeadings],
+    [filteredHeadings]
   )
 
   const [open, setOpen] = useState(false)
   const [prevPathname, setPrevPathname] = useState(pathname)
   const [activeId, setActiveId] = useState("")
   const sheetActionsRef = useRef<{ close: () => void; unmount: () => void }>(
-    null,
+    null
   )
   const isClickScrollingRef = useRef(false)
   const lockTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const scrollAfterCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
-    null,
+    null
   )
   const resetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   // 代际号：每次「打开 / 关闭 / 切页重置」都递增，过期的卸载定时器自动作废
@@ -110,7 +123,7 @@ export default function MobileNavMenu({ pathname, headings = [] }: Props) {
   const isDark = useSyncExternalStore(
     themeStore.subscribe,
     themeStore.getSnapshot,
-    themeStore.getServerSnapshot,
+    themeStore.getServerSnapshot
   )
 
   const isHome = pathname === "/"
@@ -123,7 +136,10 @@ export default function MobileNavMenu({ pathname, headings = [] }: Props) {
       offsetsRef.current = filteredHeadings
         .map((h) => document.getElementById(h.slug))
         .filter((el): el is HTMLElement => el !== null)
-        .map((el) => ({ id: el.id, top: el.getBoundingClientRect().top + window.scrollY }))
+        .map((el) => ({
+          id: el.id,
+          top: el.getBoundingClientRect().top + window.scrollY,
+        }))
     }
 
     measureOffsets()
@@ -201,10 +217,13 @@ export default function MobileNavMenu({ pathname, headings = [] }: Props) {
       scrollToHeading(slug)
     }, SHEET_CLOSE_MS)
 
-    lockTimerRef.current = setTimeout(() => {
-      isClickScrollingRef.current = false
-      lockTimerRef.current = null
-    }, clickScrollLockMs({ afterSheetClose: true }))
+    lockTimerRef.current = setTimeout(
+      () => {
+        isClickScrollingRef.current = false
+        lockTimerRef.current = null
+      },
+      clickScrollLockMs({ afterSheetClose: true })
+    )
   }
 
   const navLinkClass = (active: boolean) =>
@@ -212,7 +231,7 @@ export default function MobileNavMenu({ pathname, headings = [] }: Props) {
       buttonVariants({
         variant: active ? "secondary" : "ghost",
         className: "h-9 w-full justify-start gap-3 font-medium",
-      }),
+      })
     )
 
   return (
@@ -302,9 +321,7 @@ export default function MobileNavMenu({ pathname, headings = [] }: Props) {
                           href={entry.href}
                           target={entry.external ? "_blank" : undefined}
                           rel={
-                            entry.external
-                              ? "noopener noreferrer"
-                              : undefined
+                            entry.external ? "noopener noreferrer" : undefined
                           }
                           {...props}
                         />
@@ -327,6 +344,13 @@ export default function MobileNavMenu({ pathname, headings = [] }: Props) {
 
             <Separator />
 
+            {/* 服务状态徽章：由 Astro 侧以 slot 传入（iframe 必须服务端渲染，
+                React 侧拿不到 Astro 组件）。桌面端渲染在 navbar 最右，
+                移动端收进此处。 */}
+            {statusBadge}
+
+            <Separator />
+
             <section className="space-y-2">
               <p className="text-[0.7rem] font-semibold tracking-widest text-muted-foreground uppercase">
                 外观
@@ -335,9 +359,7 @@ export default function MobileNavMenu({ pathname, headings = [] }: Props) {
                 type="button"
                 variant="outline"
                 className="h-9 w-full justify-between"
-                onClick={() =>
-                  themeStore.toggleDark({ viewTransition: false })
-                }
+                onClick={() => themeStore.toggleDark({ viewTransition: false })}
                 aria-label={isDark ? "切换到浅色模式" : "切换到深色模式"}
               >
                 <span className="flex items-center gap-3">
@@ -377,7 +399,7 @@ export default function MobileNavMenu({ pathname, headings = [] }: Props) {
                               "block truncate py-1.5 pl-2 text-sm transition-colors",
                               active
                                 ? "-ml-px border-l-2 border-primary pl-[calc(0.5rem-1px)] font-semibold text-primary"
-                                : "text-muted-foreground hover:text-foreground",
+                                : "text-muted-foreground hover:text-foreground"
                             )}
                             aria-current={active ? "location" : undefined}
                           >
@@ -437,7 +459,7 @@ function MobileSearchSection() {
         搜索文章
       </p>
       <div className="relative">
-        <SearchIcon className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+        <SearchIcon className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
         <input
           type="text"
           role="combobox"
@@ -445,7 +467,7 @@ function MobileSearchSection() {
           placeholder="搜索文章…"
           value={query}
           onChange={(e) => onInput(e.target.value)}
-          className="h-9 w-full rounded-lg border border-input bg-background pl-8 pr-3 text-sm text-foreground outline-none placeholder:text-muted-foreground transition-all focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+          className="h-9 w-full rounded-lg border border-input bg-background pr-3 pl-8 text-sm text-foreground transition-all outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
         />
       </div>
       {query.trim().length > 0 && (

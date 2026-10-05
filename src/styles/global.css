@@ -510,6 +510,81 @@ html.is-route-loaded .route-progress {
   text-decoration: none;
 }
 
+/* 服务状态徽章（Better Stack iframe）
+   - 桌面端：仅在 ≥2xl（1536px）显示，绝对定位到 navbar 全宽最右缘
+     （窗口边缘），而非 1120px 内容网格的右缘——宽屏下网格右侧有一大段
+     留白，徽章要贴的是窗口。更窄的桌面视口下窗口缘区域正好被搜索/主题
+     按钮占用，徽章与按钮原位不可兼得，故隐藏（移动端抽屉里仍有）。
+     slot 恒为 0 宽（徽章完全不占文档流）：≥1536px 时网格与窗口缘之间
+     已有 ≥208px 空隙容下 185px 徽章 + 16px 边距，按钮组贴网格缘不动；
+     <1536px 时徽章 display:none，也无重叠。
+   - 移动端（.is-mobile，抽屉内）：占满抽屉宽度，iframe 铺满容器 */
+.status-badge-slot {
+  width: 0;
+}
+.site-navbar .status-badge:not(.is-mobile) {
+  display: none;
+}
+@media (min-width: 1536px) {
+  .site-navbar .status-badge:not(.is-mobile) {
+    /* 必须是 grid：两个主题 frame 靠 grid-area: 1/1 叠放。
+       曾误写 display:flex，flex 会把第二个 frame 排到容器右侧外、
+       被 overflow:hidden 裁掉 —— 深色模式下 dark frame 因此完全不可见。 */
+    display: grid;
+    position: absolute;
+    right: 16px;
+    z-index: 1;
+  }
+}
+.status-badge {
+  /* 两个 frame 叠放（grid-area: 1/1）容器会塌，需显式撑起尺寸。
+     加载完成前整体 opacity:0（不露空框，但占位防止布局跳动），
+     StatusBadge 的 load 监听全部就绪后写 data-loaded 淡入。 */
+  display: grid;
+  width: 185px;
+  height: 30px;
+  align-items: center;
+  line-height: 0;
+  border-radius: 6px;
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity 160ms ease;
+}
+.status-badge[data-loaded] {
+  opacity: 1;
+}
+.status-badge[data-loaded]:hover {
+  opacity: 0.8;
+}
+/* 主题跟随：light / dark 两个 frame 预加载驻留，靠 grid-area: 1/1 叠放在
+   同一位置。切换用 visibility（不用 display:none）：display:none 的
+   iframe 浏览器不渲染、也不发请求，被藏的那个要等首次切主题才加载、闪一下。
+   pointer-events 只留给可见者，避免点到藏起来的 frame。 */
+.status-badge iframe {
+  display: block;
+  border: 0;
+  grid-area: 1 / 1;
+}
+.status-badge iframe[data-theme-frame="dark"] {
+  visibility: hidden;
+  pointer-events: none;
+}
+.dark .status-badge iframe[data-theme-frame="dark"] {
+  visibility: visible;
+  pointer-events: auto;
+}
+.dark .status-badge iframe[data-theme-frame="light"] {
+  visibility: hidden;
+  pointer-events: none;
+}
+.status-badge.is-mobile {
+  width: 100%;
+}
+.status-badge.is-mobile iframe {
+  width: 100%;
+  height: 30px;
+}
+
 .site-navbar-avatar {
   width: 32px;
   height: 32px;
@@ -1113,8 +1188,8 @@ button.home-pagination-page:active {
 }
 
 /* 筛选高亮：卡片里与当前筛选 Tag 对应的标签加深（由 timeline-filter.ts 切换）。
-   放在 global.css 而非 TimelineFilter.astro：首页用的是 TaxonomyPanel，
-   不渲染 TimelineFilter，其组件内 style 不会注入到首页。 */
+   放在 global.css 而非组件内 style：首页的 TaxonomyPanel 用的是 scoped style，
+   且该样式要作用于文章卡片（组件外部）的标签。 */
 .post-timeline-tag.is-filter-active {
   color: var(--foreground);
   background: color-mix(in oklch, var(--foreground) 10%, transparent);
@@ -1202,7 +1277,8 @@ button.home-pagination-page:active {
   background: color-mix(in oklch, var(--foreground) 10%, var(--background));
   border-color: color-mix(in oklch, var(--foreground) 30%, var(--border));
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px -4px color-mix(in oklch, var(--foreground) 25%, transparent);
+  box-shadow: 0 4px 12px -4px
+    color-mix(in oklch, var(--foreground) 25%, transparent);
 }
 
 .footer-back:hover .footer-back-arrow {
@@ -1525,7 +1601,7 @@ button.home-pagination-page:active {
     height: 4.8rem;
   }
 
-  /* 卡片空间紧张：字数与阅读时长让位，优先保日期与分类 */
+  /* 卡片空间紧张：字数与阅读时长让位，优先保日期 */
   .post-timeline-meta-row .post-meta-item.is-secondary {
     display: none;
   }
