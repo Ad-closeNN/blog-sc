@@ -250,6 +250,9 @@ const jsonLd = [
         <Comments />
       </article>
 
+      <!-- Mobile Floating Table of Contents -->
+      <TableOfContents client:load headings={headings} isMobile={true} />
+
       <!-- Right Sidebar Column: Sticky Table of Contents (TOC) -->
       <aside class="post-sidebar-right">
         <TableOfContents client:load headings={headings} />

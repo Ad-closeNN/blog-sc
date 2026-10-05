@@ -532,9 +532,14 @@ html.is-route-loaded .route-progress {
        被 overflow:hidden 裁掉 —— 深色模式下 dark frame 因此完全不可见。 */
     display: grid;
     position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
     right: 16px;
     z-index: 1;
   }
+}
+astro-slot {
+  display: contents;
 }
 .status-badge {
   /* 两个 frame 叠放（grid-area: 1/1）容器会塌，需显式撑起尺寸。

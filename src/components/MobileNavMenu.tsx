@@ -342,12 +342,19 @@ export default function MobileNavMenu({
 
             <MobileSearchSection />
 
-            <Separator />
-
-            {/* 服务状态徽章：由 Astro 侧以 slot 传入（iframe 必须服务端渲染，
-                React 侧拿不到 Astro 组件）。桌面端渲染在 navbar 最右，
-                移动端收进此处。 */}
-            {statusBadge}
+            {statusBadge && (
+              <>
+                <Separator />
+                <section className="space-y-2">
+                  <p className="text-[0.7rem] font-semibold tracking-widest text-muted-foreground uppercase">
+                    服务状态
+                  </p>
+                  <div className="flex h-9 items-center">
+                    {statusBadge}
+                  </div>
+                </section>
+              </>
+            )}
 
             <Separator />
 

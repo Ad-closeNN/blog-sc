@@ -10,10 +10,14 @@ type Props = {
 /**
  * 服务状态徽章（Better Stack iframe）。
  *
- * 做成 React 岛而非 .astro 组件，是为了能挂 client:load + transition:persist：
+ * 做成 React 岛而非 .astro 组件，是为了能挂 client:idle + transition:persist：
  * transition:persist 只对带 client:* 指令的岛生效，纯 Astro 组件切页时会被
  * View Transitions 整体替换，iframe 随之重载、每次切页都重新请求第三方。
  * 与 ThemeToggle / NavMenu 同一模式。
+ *
+ * 后加载（首屏后加载）：
+ * 初始渲染不挂载 iframe，等待首屏（window load + requestIdleCallback）完成后
+ * 再开始注入 iframe 并发起第三方请求，避免首屏资源竞争与阻塞。
  *
  * 主题跟随：徽章是跨域 iframe，拿不到本站的 .dark 也无法注入 CSS，故渲染
  * light / dark 两个 frame（src 各带对应 theme 参数），靠 global.css 的
@@ -22,9 +26,29 @@ type Props = {
  */
 export default function StatusBadge({ variant = "desktop" }: Props) {
   const ref = useRef<HTMLAnchorElement>(null)
+  const [shouldLoad, setShouldLoad] = useState(false)
   const [loaded, setLoaded] = useState(false)
 
   useEffect(() => {
+    const trigger = () => {
+      const run = () => setShouldLoad(true)
+      if ("requestIdleCallback" in window) {
+        window.requestIdleCallback(run, { timeout: 2000 })
+      } else {
+        setTimeout(run, 100)
+      }
+    }
+
+    if (document.readyState === "complete") {
+      trigger()
+    } else {
+      window.addEventListener("load", trigger, { once: true })
+      return () => window.removeEventListener("load", trigger)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!shouldLoad) return
     const anchor = ref.current
     if (!anchor) return
     const frames = [...anchor.querySelectorAll("iframe")]
@@ -45,7 +69,7 @@ export default function StatusBadge({ variant = "desktop" }: Props) {
           }),
       ),
     ).then(() => setLoaded(true))
-  }, [])
+  }, [shouldLoad])
 
   if (!statusBadge.enable) return null
 
@@ -62,24 +86,28 @@ export default function StatusBadge({ variant = "desktop" }: Props) {
       aria-label={`${statusBadge.label}（在新标签页打开）`}
       title={statusBadge.label}
     >
-      <iframe
-        data-theme-frame="light"
-        src={withTheme(statusBadge.src, "light")}
-        width={statusBadge.width}
-        height={statusBadge.height}
-        loading="lazy"
-        title={statusBadge.label}
-        style={{ colorScheme: "normal" }}
-      />
-      <iframe
-        data-theme-frame="dark"
-        src={withTheme(statusBadge.src, "dark")}
-        width={statusBadge.width}
-        height={statusBadge.height}
-        loading="lazy"
-        title={statusBadge.label}
-        style={{ colorScheme: "normal" }}
-      />
+      {shouldLoad && (
+        <>
+          <iframe
+            data-theme-frame="light"
+            src={withTheme(statusBadge.src, "light")}
+            width={statusBadge.width}
+            height={statusBadge.height}
+            loading="lazy"
+            title={statusBadge.label}
+            style={{ colorScheme: "normal" }}
+          />
+          <iframe
+            data-theme-frame="dark"
+            src={withTheme(statusBadge.src, "dark")}
+            width={statusBadge.width}
+            height={statusBadge.height}
+            loading="lazy"
+            title={statusBadge.label}
+            style={{ colorScheme: "normal" }}
+          />
+        </>
+      )}
     </a>
   )
 }

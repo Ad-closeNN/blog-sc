@@ -148,7 +148,7 @@ if (!isHome) {
     <NavMenu client:load transition:persist />
     <ThemeToggle client:load transition:persist />
     <div class="status-badge-slot" />
-    <StatusBadge client:load transition:persist />
+    <StatusBadge client:idle transition:persist />
   </div>
 
   <MobileNavMenu
@@ -160,7 +160,7 @@ if (!isHome) {
     <!-- 服务状态徽章：通过 slot 传入移动端抽屉。slot 里的岛自带
          transition:persist，随 MobileNavMenu（persist 岛）在切页间保活。 -->
     <Fragment slot="statusBadge">
-      <StatusBadge client:load transition:persist variant="mobile" />
+      <StatusBadge client:idle transition:persist variant="mobile" />
     </Fragment>
   </MobileNavMenu>
 </nav>
