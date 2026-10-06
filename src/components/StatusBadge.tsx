@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from "react"
 
+import { Spinner } from "@/components/ui/spinner"
 import { statusBadge } from "@/config"
+
+type ThemeFrame = "light" | "dark"
 
 type Props = {
   /** desktop: navbar 内联固定宽；mobile: 抽屉内占满一行 */
@@ -25,9 +28,14 @@ type Props = {
  * frame 都加载完后才淡入」，不参与主题切换。
  */
 export default function StatusBadge({ variant = "desktop" }: Props) {
-  const ref = useRef<HTMLAnchorElement>(null)
+  const loadedFrames = useRef(new Set<ThemeFrame>())
   const [shouldLoad, setShouldLoad] = useState(false)
   const [loaded, setLoaded] = useState(false)
+
+  const markFrameLoaded = (theme: ThemeFrame) => {
+    loadedFrames.current.add(theme)
+    if (loadedFrames.current.size === 2) setLoaded(true)
+  }
 
   useEffect(() => {
     const trigger = () => {
@@ -47,45 +55,27 @@ export default function StatusBadge({ variant = "desktop" }: Props) {
     }
   }, [])
 
-  useEffect(() => {
-    if (!shouldLoad) return
-    const anchor = ref.current
-    if (!anchor) return
-    const frames = [...anchor.querySelectorAll("iframe")]
-
-    // 跨域 iframe 也能在父页监听 load 事件；全部加载完才展示。
-    // 兜底：若监听挂上时 frame 已加载完（load 在 attach 前已触发），
-    // once 监听不会再触发 —— 用 contentWindow?.length 探测（跨域可读，
-    // 加载完的 iframe 才有 window 且值为数字）。
-    Promise.all(
-      frames.map(
-        (frame) =>
-          new Promise<void>((resolve) => {
-            if (typeof frame.contentWindow?.length === "number") {
-              resolve()
-              return
-            }
-            frame.addEventListener("load", () => resolve(), { once: true })
-          }),
-      ),
-    ).then(() => setLoaded(true))
-  }, [shouldLoad])
-
   if (!statusBadge.enable) return null
 
   return (
     <a
-      ref={ref}
       href={statusBadge.href}
       target="_blank"
       rel="noopener noreferrer"
       className={
         variant === "mobile" ? "status-badge is-mobile" : "status-badge"
       }
+      data-loading={shouldLoad && !loaded ? "" : undefined}
       data-loaded={loaded || undefined}
       aria-label={`${statusBadge.label}（在新标签页打开）`}
       title={statusBadge.label}
     >
+      {shouldLoad && !loaded && (
+        <Spinner
+          className="status-badge-spinner"
+          aria-label="正在加载服务状态"
+        />
+      )}
       {shouldLoad && (
         <>
           <iframe
@@ -95,6 +85,7 @@ export default function StatusBadge({ variant = "desktop" }: Props) {
             height={statusBadge.height}
             loading="lazy"
             title={statusBadge.label}
+            onLoad={() => markFrameLoaded("light")}
             style={{ colorScheme: "normal" }}
           />
           <iframe
@@ -104,6 +95,7 @@ export default function StatusBadge({ variant = "desktop" }: Props) {
             height={statusBadge.height}
             loading="lazy"
             title={statusBadge.label}
+            onLoad={() => markFrameLoaded("dark")}
             style={{ colorScheme: "normal" }}
           />
         </>

@@ -542,9 +542,7 @@ astro-slot {
   display: contents;
 }
 .status-badge {
-  /* 两个 frame 叠放（grid-area: 1/1）容器会塌，需显式撑起尺寸。
-     加载完成前整体 opacity:0（不露空框，但占位防止布局跳动），
-     StatusBadge 的 load 监听全部就绪后写 data-loaded 淡入。 */
+  /* 两个 frame 叠放（grid-area: 1/1）容器会塌，需显式撑起尺寸。 */
   display: grid;
   width: 185px;
   height: 30px;
@@ -555,6 +553,7 @@ astro-slot {
   opacity: 0;
   transition: opacity 160ms ease;
 }
+.status-badge[data-loading],
 .status-badge[data-loaded] {
   opacity: 1;
 }
@@ -569,6 +568,18 @@ astro-slot {
   display: block;
   border: 0;
   grid-area: 1 / 1;
+}
+.status-badge[data-loading] iframe {
+  opacity: 0;
+  pointer-events: none;
+}
+.status-badge-spinner {
+  z-index: 1;
+  grid-area: 1 / 1;
+  align-self: center;
+  justify-self: center;
+  color: var(--muted-foreground);
+  pointer-events: none;
 }
 .status-badge iframe[data-theme-frame="dark"] {
   visibility: hidden;
@@ -1700,6 +1711,7 @@ main.is-archive-page {
   height: 0.75rem;
   flex-shrink: 0;
   border-radius: 999px;
+  background: var(--card);
   outline: 3px solid var(--primary);
   outline-offset: -2px;
 }
@@ -1867,18 +1879,80 @@ main.is-archive-page {
   word-break: keep-all;
 }
 
-/* 窄屏：标签列隐藏，主行严格单行省略（Fuwari 式） */
+/* 窄屏：每篇文章独立成卡片，标题完整换行 */
 @media (max-width: 640px) {
   .post-archive {
-    padding: 1rem 0.75rem;
+    gap: 1.25rem;
+    padding: 0;
+    border: 0;
+    background: transparent;
+  }
+
+  .post-archive-list {
+    display: grid;
+    gap: 0.625rem;
+  }
+
+  .post-archive-link {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "date statuses"
+      "title title"
+      "tags tags";
+    align-items: start;
+    gap: 0.55rem 0.75rem;
+    min-height: 0;
+    padding: 0.85rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: calc(var(--radius) * 0.8);
+    background: var(--card);
+  }
+
+  .post-archive-link time {
+    grid-area: date;
+    align-self: center;
+    text-align: left;
+  }
+
+  .post-archive-link > .post-archive-rail {
+    display: none;
+  }
+
+  .post-archive-title {
+    display: contents;
+  }
+
+  .post-archive-statuses {
+    display: flex;
+    grid-area: statuses;
+    align-items: center;
+    justify-self: end;
+    gap: 0.25rem;
+  }
+
+  .post-archive-title-text {
+    grid-area: title;
+    overflow: visible;
+    overflow-wrap: anywhere;
+    text-overflow: clip;
+    white-space: normal;
+    line-height: 1.55;
   }
 
   .post-archive-tags {
-    display: none;
+    grid-area: tags;
+    padding-left: 0;
+    text-align: left;
+    overflow-wrap: anywhere;
+    word-break: normal;
   }
 
   .post-archive-year-header h2 {
     font-size: 1.25rem;
+  }
+
+  .post-archive-year-marker {
+    background: var(--background);
   }
 }
 
