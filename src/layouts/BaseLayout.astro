@@ -28,7 +28,8 @@ type Props = {
   ogImage?: string
   /** 搜索引擎索引策略：true 时不索引该页 */
   noindex?: boolean
-  /** 页面级 JSON-LD 结构化数据（单个对象或多个对象数组，数组用 @graph 包裹） */
+  /** 页面级 JSON-LD 结构化数据（单个对象或多个对象数组）：单对象自动补
+   *  @context（缺了 Google 不认，站点名会回退显示成域名），数组用 @graph 包裹 */
   jsonLd?: object | object[]
 }
 
@@ -99,7 +100,7 @@ const ogImageAbs = Astro.props.ogImage
           set:html={JSON.stringify(
             Array.isArray(jsonLd)
               ? { "@context": "https://schema.org", "@graph": jsonLd }
-              : jsonLd
+              : { "@context": "https://schema.org", ...jsonLd }
           )}
         />
       )

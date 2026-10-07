@@ -10,9 +10,8 @@ const { post } = Astro.props
 
 <li class="post-archive-item">
   <a class="post-archive-link" href={postHref(post.id)}>
-    <time datetime={post.data.published.toISOString()}>
-      {formatShortDate(post.data.published)}
-    </time>
+    {/* 归档页不输出机器可读日期：Google 会把第一条 <time> 当成整页日期 */}
+    <span class="post-archive-date">{formatShortDate(post.data.published)}</span>
     <span class="post-archive-rail" aria-hidden="true">
       <span class="post-archive-dot"></span>
     </span>

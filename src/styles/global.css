@@ -1764,7 +1764,7 @@ main.is-archive-page {
   outline-offset: 2px;
 }
 
-.post-archive-link time {
+.post-archive-date {
   color: color-mix(in oklch, var(--muted-foreground) 85%, transparent);
   font-family: var(--font-mono);
   font-size: 0.8125rem;
@@ -1908,7 +1908,7 @@ main.is-archive-page {
     background: var(--card);
   }
 
-  .post-archive-link time {
+  .post-archive-date {
     grid-area: date;
     align-self: center;
     text-align: left;

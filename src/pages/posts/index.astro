@@ -7,11 +7,15 @@ import { getPosts } from "@/lib/posts"
 
 const posts = await getPosts()
 const summary = posts.length > 0 ? `共 ${posts.length} 篇` : "还没有文章"
+// meta description 要给 Google 一句有信息量的站点介绍；「共 N 篇」这种
+// 计数文字当 description 会被搜索结果原样照搬或改写，只留在页面正文里
+const description =
+  "Ad_closeNN 的全部文章归档：建站部署、域名邮箱、网络与浏览器等技术折腾与记录，按时间倒序排列。"
 
 const jsonLd = {
   "@type": "CollectionPage",
   name: "文章归档",
-  description: summary,
+  description,
   url: `${site.url}/posts/`,
   isPartOf: {
     "@type": "Blog",
@@ -32,7 +36,7 @@ const jsonLd = {
 
 <BaseLayout
   title="归档"
-  description={summary}
+  description={description}
   ogType="website"
   ogImage={site.iconSrc}
   jsonLd={jsonLd}

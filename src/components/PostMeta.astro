@@ -36,7 +36,14 @@ const updatedText =
 <div class:list={["post-meta", isArticle && "is-article"]}>
   <span class="post-meta-item">
     <CalendarIcon className="post-meta-icon" aria-hidden="true" />
-    <time datetime={published.toISOString()}>{publishedText}</time>
+    {/* 列表页（card）不输出机器可读日期：Google 会把首页/归档里第一条
+        <time> 当成整页日期（首页结果曾因此显示置顶文章的 2025-08-06）；
+        文章页保留完整 <time> 日期信号 */}
+    {isArticle ? (
+      <time datetime={published.toISOString()}>{publishedText}</time>
+    ) : (
+      <span>{publishedText}</span>
+    )}
   </span>
 
   {

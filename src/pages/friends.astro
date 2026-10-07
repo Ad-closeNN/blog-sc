@@ -12,7 +12,10 @@ const groups = friends.reduce<FriendGroup[]>((acc, f) => {
   return acc
 }, [])
 
-const description = `共 ${friends.length} 个站点`
+// meta description 要给 Google 一句有信息量的介绍；「共 N 个站点」这种
+// 计数文字当 description 会被搜索结果原样照搬或改写，只留在页面正文里
+const description =
+  "Ad_closeNN 的小站的友情链接页，收录站友们的独立博客与实用站点，欢迎交换友链。"
 const avatarUrl = `${site.url}${site.avatarSrc}`
 
 const jsonLd = {
@@ -40,7 +43,7 @@ const jsonLd = {
     <h1 class="m-0 font-heading text-3xl font-semibold tracking-tight">
       友情链接
     </h1>
-    <p class="mt-3 text-muted-foreground">{description}</p>
+    <p class="mt-3 text-muted-foreground">共 {friends.length} 个站点</p>
   </section>
 
   <div class="mx-auto w-[min(920px,calc(100%-32px))]">
