@@ -373,6 +373,13 @@ export const friends: Friend[] = [
     description: "分享关于网络的众多有趣的小知识",
     group: "朋友博客",
   },
+  {
+    name: "for_the_zero的小站",
+    url: "https://ftz.is-a.dev",
+    avatar: "https://ftz.is-a.dev/assets/intro/avatar.png",
+    description: "想要成为一个有趣的、厉害的、快乐的、善良的、……能被你记住的人",
+    group: "朋友博客",
+  },
 ]
 
 export const friendsApply = {
